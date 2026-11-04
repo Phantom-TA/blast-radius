@@ -6,6 +6,7 @@ from contextlib import closing
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from .charge_client import ChargeFailed, charge_order
@@ -19,6 +20,11 @@ class NewOrder(BaseModel):
     customer_id: str
     description: str
     amount_cents: int = Field(gt=0)
+
+
+@app.exception_handler(FileNotFoundError)
+def database_missing(request, error):
+    return JSONResponse(status_code=503, content={"detail": str(error)})
 
 
 @app.get("/health")

@@ -49,3 +49,12 @@ def test_unknown_customer_is_a_404(client):
 
 def test_unknown_order_is_a_404(client):
     assert client.get("/orders/ORD-404").status_code == 404
+
+
+def test_missing_database_is_a_clear_503(client, monkeypatch, tmp_path):
+    monkeypatch.setenv("BLAST_DB_PATH", str(tmp_path / "missing.db"))
+
+    response = client.get("/orders/ORD-1")
+
+    assert response.status_code == 503
+    assert "No database" in response.json()["detail"]
