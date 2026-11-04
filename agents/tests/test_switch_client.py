@@ -20,10 +20,11 @@ def frame(**payload):
 
 
 def test_message_from_event():
-    message = Message.from_event(frame(sender_kind="user", thread_id="root-1"))
+    message = Message.from_event(frame(sender_role="owner", thread_id="root-1"))
     assert message.room_id == "room-1"
     assert message.sender == "@amiyasingh05:localhost"
-    assert message.sender_kind == "user"
+    assert message.sender_kind is None
+    assert message.sender_role == "owner"
     assert message.sequence == 42
     assert message.reply_thread == "root-1"
     assert message.text_without_mentions() == "execute rb-123"

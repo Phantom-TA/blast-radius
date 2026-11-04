@@ -153,8 +153,12 @@ class Message:
     message_id: str
     thread_id: str | None
     sequence: int
-    # "user" (a person), "agent" or "platform" (Switch itself). None on old rows.
+    # "platform" when Switch itself posted it; otherwise absent (None), for people
+    # and agents alike, so it can't tell a person from an agent on its own.
     sender_kind: str | None = None
+    # "owner", "admin" or "member" when a person that a Switch user has claimed sent
+    # it. None for an agent, for Switch itself, and for an unlinked chat account.
+    sender_role: str | None = None
 
     @classmethod
     def from_event(cls, frame: dict) -> "Message":
@@ -169,6 +173,7 @@ class Message:
             thread_id=payload.get("thread_id"),
             sequence=frame["id"],
             sender_kind=payload.get("sender_kind"),
+            sender_role=payload.get("sender_role"),
         )
 
     @property
@@ -177,6 +182,21 @@ class Message:
 
     def text_without_mentions(self) -> str:
         return re.sub(r"@[\w.\-]+", "", self.body).strip()
+
+
+PERSON_ROLES = {"owner", "admin", "member"}
+
+
+def person_name(message: Message) -> str | None:
+    """The sender's chat username if a person Switch recognises sent the message, else None.
+
+    Switch puts the person's workspace role on every message it delivers from a
+    claimed person, and nothing on a message from an agent or from Switch itself.
+    The name is the chat username, so it also works in an @mention.
+    """
+    if message.sender_kind == "platform" or message.sender_role not in PERSON_ROLES:
+        return None
+    return message.sender_name or None
 
 
 class SwitchAgent:
@@ -268,20 +288,10 @@ class SwitchAgent:
         return room_id
 
     def person_name(self, message: Message) -> str | None:
-        """The sender's name if a person sent the message, else None.
-
-        Switch tags most messages with sender_kind. When it doesn't, the room's
-        participant list decides; a sender it doesn't list counts as not a person.
-        """
-        if message.sender_kind not in (None, "user"):
-            return None
-        for participant in self.connect_to_room(message.room_id)["participants"]:
-            if participant["id"] == message.sender:
-                return participant["name"] if participant["type"] == "user" else None
-        return None
+        return person_name(message)
 
     def sender_is_person(self, message: Message) -> bool:
-        return self.person_name(message) is not None
+        return person_name(message) is not None
 
     def send(self, room_id: str, text: str, mention: list[str] | None = None,
              thread_id: str | None = None) -> None:

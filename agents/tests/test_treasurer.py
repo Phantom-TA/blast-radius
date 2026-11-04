@@ -33,14 +33,21 @@ def treasurer(backend, tmp_path, documents=None):
 
 def test_refuses_an_agent_and_touches_nothing(backend, tmp_path):
     agent, switch = treasurer(backend, tmp_path)
-    agent.handle(message("@treasurer prepare refunds", sender="@support:localhost", kind="agent"))
+    agent.handle(message("@treasurer prepare refunds", sender="@support:localhost", role=None))
     assert switch.replies[0][1] == NOT_A_PERSON
     assert fakes.batches == {}
 
 
-def test_refuses_a_sender_it_cannot_identify_as_a_person(backend, tmp_path):
+def test_refuses_switch_itself_even_on_behalf_of_a_person(backend, tmp_path):
     agent, switch = treasurer(backend, tmp_path)
-    agent.handle(message("@treasurer prepare refunds", sender="@someone:localhost", kind=None))
+    agent.handle(message("@treasurer prepare refunds", kind="platform", role="owner"))
+    assert switch.replies[0][1] == NOT_A_PERSON
+    assert fakes.batches == {}
+
+
+def test_refuses_a_chat_account_no_switch_user_has_claimed(backend, tmp_path):
+    agent, switch = treasurer(backend, tmp_path)
+    agent.handle(message("@treasurer prepare refunds", sender="@someone:localhost", role=None))
     assert switch.replies[0][1] == NOT_A_PERSON
     assert fakes.batches == {}
 

@@ -38,7 +38,7 @@ def test_report_when_nobody_is_affected():
 
 def test_replies_in_the_thread_that_asked():
     switch = FakeSwitch()
-    asked = message("@investigator how many customers were hit?", kind="agent")
+    asked = message("@investigator how many customers were hit?", role=None)
     Investigator(switch, BACKEND).handle(asked)
     [(replied_to, text)] = switch.replies
     assert replied_to is asked
