@@ -34,8 +34,11 @@ def test_a_top_level_message_is_answered_in_its_own_thread():
 
 
 def test_socket_url_reuses_the_connection_id_and_resumes_from_the_cursor(monkeypatch, tmp_path):
+    from agents.common import switch_client
+
     credentials = Credentials("treasurer", "agent-1", "key", "conn-1")
     monkeypatch.setattr(Credentials, "load", classmethod(lambda cls, name: credentials))
+    monkeypatch.setattr(switch_client, "STATE_DIR", tmp_path)
     agent = SwitchAgent("treasurer", "http://localhost:63238")
     url = agent._socket_url()
     assert url.startswith("ws://localhost:63238/agents/agent-1/connection/ws?")
@@ -45,3 +48,21 @@ def test_socket_url_reuses_the_connection_id_and_resumes_from_the_cursor(monkeyp
     agent.cursor, agent.generation = 17, 3
     url = agent._socket_url()
     assert "start_from=17" in url and "expected_generation=3" in url
+
+
+def test_the_cursor_survives_a_restart(monkeypatch, tmp_path):
+    from agents.common import switch_client
+
+    credentials = Credentials("investigator", "agent-1", "key", "conn-1")
+    monkeypatch.setattr(Credentials, "load", classmethod(lambda cls, name: credentials))
+    monkeypatch.setattr(switch_client, "STATE_DIR", tmp_path)
+
+    first = SwitchAgent("investigator", "http://localhost:63238")
+    assert first.cursor == 0
+    first._advance(25)
+    first._advance(20)  # cursors only move forward
+    assert first.cursor == 25
+
+    second = SwitchAgent("investigator", "http://localhost:63238")
+    assert second.cursor == 25
+    assert "start_from=25" in second._socket_url()

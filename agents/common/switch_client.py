@@ -27,6 +27,7 @@ AGENTS_DIR = Path(__file__).resolve().parent.parent
 SECRETS_DIR = AGENTS_DIR / ".secrets"
 REGISTRATION_KEY_FILE = SECRETS_DIR / "registration_key"
 SERVER_URL_FILE = SECRETS_DIR / "server_url"
+STATE_DIR = AGENTS_DIR / ".state"
 
 # Eviction codes after which reconnecting would steal the connection back or can never work.
 FINAL_EVICTIONS = {"taken_over", "closed"}
@@ -184,9 +185,17 @@ class SwitchAgent:
     def __init__(self, name: str, server_url: str | None = None):
         self.credentials = Credentials.load(name)
         self.server_url = server_url or find_server_url()
-        self.cursor = 0
+        self.cursor_file = STATE_DIR / f"{name}.cursor"
+        # Resume where the last run stopped, so a restart doesn't miss what came meanwhile.
+        self.cursor = int(self.cursor_file.read_text()) if self.cursor_file.exists() else 0
         self.generation = None
-        self._queued_up_to = 0
+        self._queued_up_to = self.cursor
+
+    def _advance(self, cursor: int) -> None:
+        if cursor > self.cursor:
+            self.cursor = cursor
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            self.cursor_file.write_text(str(cursor))
 
     @property
     def name(self) -> str:
@@ -335,11 +344,11 @@ class SwitchAgent:
                 if kind == "ping":
                     await socket.send(json.dumps({"type": "pong", "cursor": self.cursor}))
                 elif kind == "connection_state":
-                    self.cursor = data.get("cursor") or self.cursor
+                    self._advance(data.get("cursor") or 0)
                     self.generation = data.get("generation")
                     log.info("%s: connected, covering %d rooms", self.name, len(data.get("rooms", [])))
                 elif kind == "gap":
-                    self.cursor = data.get("resumed_at") or self.cursor
+                    self._advance(data.get("resumed_at") or 0)
                 elif kind == "evicted":
                     if data.get("code") in FINAL_EVICTIONS:
                         raise Stop(f"evicted: {data.get('code')} {data.get('reason')}")
@@ -351,7 +360,7 @@ class SwitchAgent:
                     if data.get("payload", {}).get("addressed"):
                         queue.put_nowait(Message.from_event(frame))
                     else:
-                        self.cursor = max(self.cursor, frame["id"])
+                        self._advance(frame["id"])
 
     async def _work(self, queue: asyncio.Queue, handle: Callable[[Message], None]) -> None:
         """Handle one message at a time, off the socket loop, so pings never wait on work."""
@@ -361,4 +370,4 @@ class SwitchAgent:
                 await asyncio.to_thread(handle, message)
             except Exception:
                 log.exception("%s: failed on message %s", self.name, message.message_id)
-            self.cursor = max(self.cursor, message.sequence)
+            self._advance(message.sequence)

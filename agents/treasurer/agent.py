@@ -16,14 +16,14 @@ import logging
 import re
 from pathlib import Path
 
-from agents.common.switch_client import SECRETS_DIR, Message, SwitchAgent
+from agents.common.switch_client import STATE_DIR, Message, SwitchAgent
 
 log = logging.getLogger("treasurer")
 
 FINANCE_ROOM = "finance-approvals"
 APOLOGY_DOCUMENT = "apology-email"
 FALLBACK_TEMPLATE = Path(__file__).resolve().parent / "apology_template.md"
-STATE_FILE = SECRETS_DIR.parent / ".state" / "treasurer.json"
+STATE_FILE = STATE_DIR / "treasurer.json"
 DEFAULT_SUBJECT = "We charged you twice for order {order_id}, and we've refunded you"
 
 PREPARE = re.compile(r"\bprepare\b", re.IGNORECASE)
