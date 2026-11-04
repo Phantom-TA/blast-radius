@@ -53,6 +53,8 @@ The payment service runs on port 8400 and the Mailpit inbox on http://localhost:
 make register
 ```
 
+**Docker and Mattermost must be running when you do this.** Switch gives each agent its own Mattermost account at registration; if Mattermost is down then, the agents later post under your name or not at all (see "If something goes wrong").
+
 This runs `scripts/register_agents.py`. It:
 
 - signs in to Switch's Gateway API as the agents' owner. On the server Console runs it uses Console's own admin login, so it asks nothing. On any other server it asks for your Switch email and password;
@@ -127,6 +129,7 @@ Then type `!reset-all-agents` in #support, so Support and Fixer forget the last 
 
 ## If something goes wrong
 
+- **The Investigator, Treasurer or customer's messages show under your name in Mattermost, or don't show at all.** Mattermost wasn't running when they were registered, so they have no Mattermost account in the channels. In Switch Console open **Admin**, select **Restart** (Switch creates the missing accounts when it starts), wait for **Running**, then run `python switch/rejoin_agents.py` to put each agent's account into its channels.
 - **An agent ignores you.** Your Mattermost account isn't linked to your Switch user. See step 2.
 - **"Switch answered 500" when a room is created, or rooms don't show up in Mattermost.** Mattermost isn't running, usually because Docker Desktop stopped. Start Docker, then check that **Also run Mattermost** is on, on the server's page in Console.
 - **An agent says "Starting a session to handle this — one moment." and nothing follows.** Look in Switch Console: Claude Code may be waiting for you to allow an action.
