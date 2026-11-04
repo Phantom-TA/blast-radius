@@ -1,0 +1,96 @@
+# Blast Radius: the rooms and Claude Code agents, as a Switch Console template.
+#
+# Template language version 2 (Switch's docs/TEMPLATES.md, "Version 2"): every
+# resource has a key and a type, and resources refer to each other by key.
+#
+# The investigator, treasurer and customer-sim agents are not created here. They
+# are plain Python agents registered by scripts/register_agents.py, so run that
+# first; the rooms below name them as agents that already exist.
+version: 2
+params:
+  workspace:
+    type: directory
+    label: Fixer's folder
+    description: >-
+      Full path to demo-workspace/payments-service inside your blast-radius
+      clone, for example /Users/you/blast-radius/demo-workspace/payments-service.
+      `make scenario` creates it.
+    required: true
+  bridge:
+    type: bridge
+    label: Messaging app
+    description: Where the rooms are created. Mattermost on Switch's local server.
+    default: [Mattermost, $first]
+  machine:
+    type: machine
+    description: The machine the two Claude Code agents run on.
+    default: [$first]
+    input: advanced
+  support_dir:
+    type: directory
+    label: Support's folder
+    description: Support's working directory. It needs no files.
+    default: "{$agents_dir}/{support.name}"
+    input: advanced
+form:
+  advanced: { label: Advanced, open: false }
+
+resources:
+  support:
+    type: agent
+    name: support
+    display_name: Support
+    description: >-
+      Answers customers, opens a room for each problem, hands out the work,
+      drafts the apology and writes the postmortem.
+    provider: claude
+    machine: "{machine}"
+    directory: "{support_dir}"
+    instructions: |
+      @include agent-instructions/support.md
+
+  fixer:
+    type: agent
+    name: fixer
+    display_name: Fixer
+    description: >-
+      Fixes the payment service in demo-workspace/payments-service on a branch,
+      with a regression test.
+    provider: claude
+    machine: "{machine}"
+    directory: "{workspace}"
+    instructions: |
+      @include agent-instructions/fixer.md
+
+  blast_radius:
+    type: group
+    name: Blast Radius
+    description: From one customer's complaint to refunds for everyone the bug hit.
+    links:
+      - { from: support_room, to: finance_room, label: where refunds wait for a person }
+      - { from: finance_room, to: support_room, label: where customers complain }
+
+  support_room:
+    type: room
+    group: blast_radius
+    name: support
+    description: Acme Store's customer support desk. Customers write here.
+    bridge: "{bridge}"
+    agents: [support, customer-sim]
+    users: ["{$creator}"]
+    instructions: |
+      @include room-instructions/support.md
+    kickoff: >-
+      @{support.name} you're on the support desk. Say hello in one line, then
+      wait for customers.
+
+  finance_room:
+    type: room
+    group: blast_radius
+    name: finance-approvals
+    description: Every money action waits here for a person.
+    bridge: "{bridge}"
+    agents: [treasurer, support]
+    users: ["{$creator}"]
+    instructions: |
+      @include room-instructions/finance-approvals.md
