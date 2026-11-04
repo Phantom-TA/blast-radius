@@ -235,18 +235,56 @@ class SwitchAgent:
         self.connect_to_room(message.room_id)
         self.call("post_message", {"body": text, "thread_id": message.reply_thread})
 
+    def rooms(self) -> list[dict]:
+        """The rooms this agent is in, each {id, name, ...}."""
+        return self.call("list_rooms", bound=False)
+
     def room_id(self, name: str) -> str:
-        for room in self.call("list_rooms", bound=False):
-            if room["name"].lstrip("#") == name:
+        for room in self.rooms():
+            if room["name"].lstrip("#") == name.lstrip("#"):
                 return room["id"]
         raise LookupError(f"{self.name} isn't in a room named {name}")
 
-    def sender_is_person(self, message: Message) -> bool:
-        """Whether the sender is a human participant of the room. Unknown senders count as not."""
+    def room_name(self, room_id: str) -> str:
+        for room in self.rooms():
+            if room["id"] == room_id:
+                return room["name"]
+        return room_id
+
+    def person_name(self, message: Message) -> str | None:
+        """The sender's name if a person sent the message, else None.
+
+        Switch tags most messages with sender_kind. When it doesn't, the room's
+        participant list decides; a sender it doesn't list counts as not a person.
+        """
+        if message.sender_kind not in (None, "user"):
+            return None
         for participant in self.connect_to_room(message.room_id)["participants"]:
             if participant["id"] == message.sender:
-                return participant["type"] == "user"
-        return False
+                return participant["name"] if participant["type"] == "user" else None
+        return None
+
+    def sender_is_person(self, message: Message) -> bool:
+        return self.person_name(message) is not None
+
+    def send(self, room_id: str, text: str, mention: list[str] | None = None,
+             thread_id: str | None = None) -> None:
+        """Post into a room. Names in mention are @mentioned, which notifies them."""
+        self.connect_to_room(room_id)
+        if mention:
+            self.call("send_targeted_message",
+                      {"body": text, "target_names": mention, "thread_id": thread_id})
+        else:
+            self.call("post_message", {"body": text, "thread_id": thread_id})
+
+    def room_document(self, room_id: str, name: str) -> str | None:
+        """The content of the room document with this name, or None if the room has none."""
+        documents = self.connect_to_room(room_id).get("documents") or []
+        for document in documents:
+            if document.get("name") == name:
+                loaded = self.call("load_internal_documents", {"ids": [document["id"]]})
+                return loaded[0]["content"]
+        return None
 
     def run(self, handle: Callable[[Message], None]) -> None:
         """Serve forever: answer pings, reconnect after drops, hand addressed messages to handle."""
