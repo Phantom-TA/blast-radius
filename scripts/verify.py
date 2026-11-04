@@ -1,8 +1,10 @@
 """Print PASS or FAIL for each thing a finished demo must have produced."""
 
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 from contextlib import closing
@@ -16,6 +18,7 @@ from seed.seed import AFFECTED_CUSTOMERS  # noqa: E402
 
 SERVICE_WORKSPACE = ROOT / "demo-workspace" / "payments-service"
 MAILPIT_MESSAGES = "http://localhost:8025/api/v1/messages?limit=1"
+PYTEST_TESTS_FAILED = 1
 
 # Runs inside the Fixer's workspace: one timeout, one retry, then count the charges.
 RETRY_PROBE = """
@@ -52,13 +55,36 @@ def run_in_workspace(*command: str) -> subprocess.CompletedProcess:
     return subprocess.run(command, cwd=SERVICE_WORKSPACE, capture_output=True, text=True)
 
 
-def regression_test_added() -> bool:
-    changed = run_in_workspace("git", "diff", "--name-only", "baseline").stdout.split()
-    untracked = run_in_workspace("git", "ls-files", "--others", "--exclude-standard").stdout.split()
-    return any(
-        Path(name).name.startswith("test_") and name.endswith(".py")
-        for name in changed + untracked
-    )
+def changed_files() -> list[str]:
+    changed = run_in_workspace("git", "diff", "--name-only", "baseline").stdout.splitlines()
+    untracked = run_in_workspace(
+        "git", "ls-files", "--others", "--exclude-standard"
+    ).stdout.splitlines()
+    return changed + untracked
+
+
+def is_test_file(name: str) -> bool:
+    return Path(name).name.startswith("test_") and name.endswith(".py")
+
+
+def pytest_exit_code_on_original_code(changed: list[str]) -> int:
+    """Run the Fixer's tests with the original code put back, in a scratch copy."""
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+        scratch = Path(folder) / "payments-service"
+        shutil.copytree(
+            SERVICE_WORKSPACE,
+            scratch,
+            ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache"),
+        )
+        for name in changed:
+            original = subprocess.run(
+                ["git", "show", f"baseline:{name}"], cwd=SERVICE_WORKSPACE, capture_output=True
+            )
+            if not is_test_file(name) and original.returncode == 0:
+                (scratch / name).write_bytes(original.stdout)
+        return subprocess.run(
+            [sys.executable, "-m", "pytest", "-q"], cwd=scratch, capture_output=True
+        ).returncode
 
 
 def check_fix() -> tuple[bool, str]:
@@ -76,9 +102,16 @@ def check_fix() -> tuple[bool, str]:
     if charges != "1":
         return False, f"a timeout plus a retry still creates {charges} charges, expected 1"
 
-    if not regression_test_added():
+    changed = changed_files()
+    if not any(is_test_file(name) for name in changed):
         return False, "bug is fixed but no test file was added or changed"
-    return True, "tests pass, retry creates 1 charge, regression test added"
+
+    exit_code = pytest_exit_code_on_original_code(changed)
+    if exit_code == 0:
+        return False, "bug is fixed but the new test also passes on the buggy code"
+    if exit_code != PYTEST_TESTS_FAILED:
+        return False, "the new test can't run on the original code, so it proves nothing yet"
+    return True, "tests pass, retry creates 1 charge, regression test fails on the buggy code"
 
 
 def check_refunds() -> tuple[bool, str]:
