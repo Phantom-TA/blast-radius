@@ -69,6 +69,24 @@ def test_stray_braces_in_the_wording_are_left_alone(db_path, batch_id, inbox):
     assert "{not a placeholder}" in inbox.messages[0].get_payload()
 
 
+def test_unknown_placeholder_stops_before_any_email_is_sent(db_path, batch_id, inbox):
+    execute_refund_batch(batch_id, "tushar")
+
+    with pytest.raises(ValueError, match="customer_name"):
+        send_apology_emails(batch_id, SUBJECT, "Hi {customer_name}, sorry about that.")
+
+    assert inbox.messages == []
+
+
+def test_non_ascii_wording_survives_delivery(db_path, batch_id, inbox):
+    execute_refund_batch(batch_id, "tushar")
+    send_apology_emails(batch_id, "We’re sorry — {order_id}", "Hi {name} — we’re sorry.")
+
+    message = next(m for m in inbox.messages if m["To"] == "ana@example.com")
+    body = message.get_payload(decode=True).decode("utf-8")
+    assert "Hi Ana Silva — we’re sorry." in body
+
+
 def test_rerun_never_repeats_an_email(db_path, batch_id, inbox):
     execute_refund_batch(batch_id, "tushar")
     send_apology_emails(batch_id, SUBJECT, BODY)

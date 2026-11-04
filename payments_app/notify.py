@@ -1,6 +1,7 @@
 """Send apology emails for an executed refund batch to the local Mailpit inbox."""
 
 import os
+import re
 import smtplib
 from contextlib import closing
 from datetime import datetime, timezone
@@ -9,12 +10,21 @@ from email.message import EmailMessage
 from payments_app.service.store import connect
 
 FROM_ADDRESS = "support@acme-store.example"
+PLACEHOLDERS = ("name", "order_id", "amount")
+
+
+def _check_placeholders(*templates: str) -> None:
+    """The wording is drafted by an agent, so catch a typo before it reaches every customer."""
+    used = {word for template in templates for word in re.findall(r"\{(\w+)\}", template)}
+    unknown = sorted(used.difference(PLACEHOLDERS))
+    if unknown:
+        raise ValueError(f"unknown placeholders {unknown}, use only {list(PLACEHOLDERS)}")
 
 
 def _fill(template: str, customer: dict) -> str:
     """Plain text swap, so a stray brace in the drafted wording can't break the send."""
     text = template
-    for placeholder in ("name", "order_id", "amount"):
+    for placeholder in PLACEHOLDERS:
         text = text.replace(f"{{{placeholder}}}", customer[placeholder])
     return text
 
@@ -55,6 +65,7 @@ def send_apology_emails(batch_id: str, subject: str, body_template: str) -> int:
     not been executed. Customers already emailed are skipped, so a rerun never repeats
     an email. Returns the count sent.
     """
+    _check_placeholders(subject, body_template)
     host = os.environ.get("SMTP_HOST", "localhost")
     port = int(os.environ.get("SMTP_PORT", "1025"))
 
