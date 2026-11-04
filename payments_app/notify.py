@@ -23,7 +23,8 @@ def _check_placeholders(*templates: str) -> None:
 
 def _fill(template: str, customer: dict) -> str:
     """Plain text swap, so a stray brace in the drafted wording can't break the send."""
-    text = template
+    # {amount} already includes the dollar sign, so "${amount}" must not show it twice.
+    text = template.replace("${amount}", "{amount}")
     for placeholder in PLACEHOLDERS:
         text = text.replace(f"{{{placeholder}}}", customer[placeholder])
     return text

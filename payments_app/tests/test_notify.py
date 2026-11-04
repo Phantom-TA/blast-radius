@@ -62,6 +62,14 @@ def test_fills_in_the_template_for_each_customer(db_path, batch_id, inbox):
     assert "Hi Chen Wei, we refunded $58.00 for ORD-3." in message.get_payload()
 
 
+def test_dollar_sign_before_amount_is_not_doubled(db_path, batch_id, inbox):
+    execute_refund_batch(batch_id, "tushar")
+    send_apology_emails(batch_id, SUBJECT, "We refunded ${amount} to you.")
+
+    message = next(m for m in inbox.messages if m["To"] == "chen@example.com")
+    assert "We refunded $58.00 to you." in message.get_payload()
+
+
 def test_stray_braces_in_the_wording_are_left_alone(db_path, batch_id, inbox):
     execute_refund_batch(batch_id, "tushar")
     send_apology_emails(batch_id, SUBJECT, "Sorry {name} {not a placeholder}")
