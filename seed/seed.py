@@ -170,12 +170,20 @@ def build(db_path: str) -> dict:
     }
 
 
-def main() -> None:
-    db_path = get_db_path()
-    complainer = build(db_path)
+def save_complainer(complainer: dict) -> None:
+    """Skip the write when nothing changed, so git doesn't list the file as modified."""
+    if COMPLAINER_FILE.exists():
+        if json.loads(COMPLAINER_FILE.read_text(encoding="utf-8")) == complainer:
+            return
     with open(COMPLAINER_FILE, "w", encoding="utf-8", newline="\n") as file:
         json.dump(complainer, file, indent=2)
         file.write("\n")
+
+
+def main() -> None:
+    db_path = get_db_path()
+    save_complainer(build(db_path))
+    complainer = json.loads(COMPLAINER_FILE.read_text(encoding="utf-8"))
 
     summary = summarize(find_affected_customers(db_path))
     if summary["count"] != AFFECTED_CUSTOMERS:

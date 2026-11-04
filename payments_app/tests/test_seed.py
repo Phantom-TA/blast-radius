@@ -1,10 +1,12 @@
+import json
 from contextlib import closing
 
 import pytest
 
+import seed.seed as seed_script
 from payments_app.blast import find_affected_customers, summarize
 from payments_app.service.store import connect
-from seed.seed import AFFECTED_CUSTOMERS, ORDER_COUNT, build
+from seed.seed import AFFECTED_CUSTOMERS, ORDER_COUNT, build, save_complainer
 
 
 @pytest.fixture(scope="module")
@@ -37,6 +39,28 @@ def test_complainer_is_one_of_the_affected(seeded):
     complained = [item for item in find_affected_customers(path) if item["complained"]]
 
     assert [item["order_id"] for item in complained] == [complainer["order_id"]]
+
+
+def test_complainer_file_is_left_alone_when_unchanged(seeded, tmp_path, monkeypatch):
+    _, complainer = seeded
+    path = tmp_path / "complainer.json"
+    windows_checkout = json.dumps(complainer, indent=2).replace("\n", "\r\n").encode()
+    path.write_bytes(windows_checkout)
+    monkeypatch.setattr(seed_script, "COMPLAINER_FILE", path)
+
+    save_complainer(complainer)
+
+    assert path.read_bytes() == windows_checkout
+
+
+def test_complainer_file_is_written_when_missing(seeded, tmp_path, monkeypatch):
+    _, complainer = seeded
+    path = tmp_path / "complainer.json"
+    monkeypatch.setattr(seed_script, "COMPLAINER_FILE", path)
+
+    save_complainer(complainer)
+
+    assert json.loads(path.read_text(encoding="utf-8")) == complainer
 
 
 def test_two_runs_give_identical_data(seeded, tmp_path):
