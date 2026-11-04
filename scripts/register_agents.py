@@ -8,24 +8,19 @@ addressing is set again either way.
 """
 
 import argparse
-import getpass
-import http.cookiejar
-import json
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from agents.common.gateway import gateway_session  # noqa: E402
 from agents.common.switch_client import (  # noqa: E402
     REGISTRATION_KEY_FILE,
     SECRETS_DIR,
     Credentials,
     SwitchAgent,
     SwitchError,
-    console_data_dir,
     find_server_url,
     register_agent,
 )
@@ -52,58 +47,6 @@ AGENTS = [
         "owner_only",
     ),
 ]
-
-
-def console_admin_login(server_url: str) -> tuple[str, str] | None:
-    """The admin account Switch Console made for its local server, if that's the server in use."""
-    env_file = console_data_dir() / "local-switch-server" / "native" / "run" / "switch-core.env"
-    if not env_file.exists():
-        return None
-    env = dict(
-        line.split("=", 1)
-        for line in env_file.read_text().splitlines()
-        if "=" in line and not line.startswith("#")
-    )
-    if env.get("GATEWAY_PUBLIC_URL", "").rstrip("/") != server_url:
-        return None
-    if not env.get("GATEWAY_ADMIN_EMAIL") or not env.get("GATEWAY_ADMIN_PASSWORD"):
-        return None
-    return env["GATEWAY_ADMIN_EMAIL"], env["GATEWAY_ADMIN_PASSWORD"]
-
-
-def gateway_session(server_url: str):
-    """Sign in to the Gateway API as the agents' owner; returns a call(method, path, body).
-
-    Uses the Console-managed server's admin account when it can find it, else asks.
-    The password is only sent to your own Switch server.
-    """
-    login = console_admin_login(server_url)
-    if login:
-        email, password = login
-        print(f"Signing in to {server_url} as {email} (Switch Console's local admin).")
-    else:
-        print(f"Sign in to Switch at {server_url} (the account that owns the agents).")
-        email = input("Email: ").strip()
-        password = getpass.getpass("Password: ")
-    opener = urllib.request.build_opener(
-        urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
-    )
-
-    def gateway(method: str, path: str, body: dict) -> dict:
-        request = urllib.request.Request(
-            f"{server_url}/gateway{path}",
-            data=json.dumps(body).encode(),
-            headers={"Content-Type": "application/json"},
-            method=method,
-        )
-        try:
-            with opener.open(request, timeout=30) as response:
-                return json.loads(response.read())
-        except urllib.error.HTTPError as error:
-            raise SystemExit(f"{path} failed with {error.code}: {error.read().decode()[:300]}")
-
-    gateway("POST", "/auth/login", {"email": email, "password": password})
-    return gateway
 
 
 # The rules Switch stores for each addressing choice Switch Console offers
