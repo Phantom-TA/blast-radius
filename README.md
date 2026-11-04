@@ -54,23 +54,23 @@ The Investigator and Treasurer are plain Python with no LLM. Customer counts and
 
 ## How to run it
 
-You need Python 3.11+, Docker, and Switch set up as described in [switch/SETUP.md](switch/SETUP.md).
+You need Python 3.11+, Docker, and Switch Console 0.40.1 set up as described in [switch/SETUP.md](switch/SETUP.md). Use that exact version: Switch's agent connection changes between releases.
 
 ```bash
 python -m venv .venv
 ```
 
-On Linux use `python3` for this first command. Activate it with `.venv\Scripts\activate` on Windows or `source .venv/bin/activate` on Linux, then:
+On macOS and Linux use `python3 -m venv .venv` for this first command. Keep the virtualenv at `.venv` in the repo root, because the Fixer runs its tests with that Python. Activate it with `.venv\Scripts\activate` on Windows or `source .venv/bin/activate` on macOS and Linux, then:
 
 ```bash
-pip install -r payments_app/requirements.txt
+pip install -r payments_app/requirements.txt -r agents/requirements.txt
 ```
 
 ```bash
 python run.py demo
 ```
 
-`make demo` does the same if you have `make`. Every `run.py` command:
+`make demo` does the same if you have `make`. `demo` keeps running with the Investigator and Treasurer, so leave that terminal open, then follow the story in Mattermost as described in [switch/SETUP.md](switch/SETUP.md). Every `run.py` command:
 
 | Command | What it does |
 |---|---|
@@ -78,15 +78,18 @@ python run.py demo
 | `seed` | Rebuilds the database from the fixed seed |
 | `scenario` | Reseeds, recreates the Fixer's workspace, empties Mailpit, posts the complaint |
 | `register` | Registers the Python agents with Switch |
+| `rooms` | Creates the rooms and the Claude Code agents from the Switch template |
 | `agents` | Starts the Investigator and Treasurer |
-| `verify` | Prints PASS or FAIL for the fix, the refunds and the emails |
-| `reset` | Goes back to the starting state |
-| `demo` | Runs `up`, `register`, `scenario` and `agents` in order |
+| `verify` | Prints PASS or FAIL for the fix, the refunds, the emails and the postmortem |
+| `reset` | Goes back to the starting state and archives the old blast room |
+| `demo` | Runs `up`, `register`, `rooms`, `agents` and `scenario` in order |
+
+To run the demo again, run `python run.py reset`, type `!reset-all-agents` in #support so Support and Fixer start fresh, then run `python run.py scenario` while the agents are running.
 
 Run the tests with:
 
 ```bash
-python -m pytest payments_app
+python -m pytest payments_app agents/tests
 ```
 
 ## Why this breaks without Switch
@@ -111,8 +114,18 @@ payments_app/
   refunds.py          Builds and executes refund batches
   notify.py           Sends apology emails
   tests/              Tests for the modules above
+agents/
+  investigator/       Counts the affected customers. Plain Python, no LLM
+  treasurer/          Prepares and executes refunds. Plain Python, people only
+  common/             The connection to Switch
+  postmortem.py       Checks that the postmortem room document exists
+switch/
+  template.yaml       The rooms and Claude Code agents
+  SETUP.md            Setup steps for Switch
+  agent-instructions/ What Support and Fixer are told
+  room-instructions/  What every agent in a room is told
 seed/                 Generates the same data on every run
-scripts/verify.py     Checks the finished demo
+scripts/              Registers agents, posts the complaint, checks the finished demo
 run.py                All project commands
 ```
 
@@ -123,6 +136,8 @@ run.py                All project commands
 - **`Mailpit isn't reachable`**: run `python run.py up`. The inbox is at http://localhost:8025.
 - **Port 8400, 1025 or 8025 is already in use**: stop whatever is using it, then run `python run.py up` again. For the payment service you can pick another port instead by setting `PAYMENTS_PORT`.
 - **`verify` shows FAIL before the demo**: that's expected. The checks only pass after the agents finish the work.
+- **`No module named 'websockets'`**: install both requirements files: `pip install -r payments_app/requirements.txt -r agents/requirements.txt`.
+- **`customer-sim isn't in a room named support`**: the rooms don't exist yet. Run `python run.py rooms`.
 - **`verify` says the bug still isn't fixed after the Fixer finished**: the fix must be checked out in `demo-workspace/payments-service`. If it's on another branch, switch to that branch.
 - **`verify` says the new test passes on the buggy code, or can't run on the original code**: the regression test has to prove the bug is gone, so it must fail on the original code. Write it against `charge_order` and `FakeProvider`: simulate one timeout, then check there is exactly one charge.
 - **`unknown placeholders` when sending emails**: the wording may only use `{name}`, `{order_id}` and `{amount}`. No email is sent until it's corrected.
