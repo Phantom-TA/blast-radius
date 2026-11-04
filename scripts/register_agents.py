@@ -25,6 +25,7 @@ from agents.common.switch_client import (  # noqa: E402
     Credentials,
     SwitchAgent,
     SwitchError,
+    console_data_dir,
     find_server_url,
     register_agent,
 )
@@ -53,25 +54,47 @@ AGENTS = [
 ]
 
 
-def create_registration_key(server_url: str) -> None:
-    """Sign in to the Gateway API and create a registration key.
+def console_admin_login(server_url: str) -> tuple[str, str] | None:
+    """The admin account Switch Console made for its local server, if that's the server in use."""
+    env_file = console_data_dir() / "local-switch-server" / "native" / "run" / "switch-core.env"
+    if not env_file.exists():
+        return None
+    env = dict(
+        line.split("=", 1)
+        for line in env_file.read_text().splitlines()
+        if "=" in line and not line.startswith("#")
+    )
+    if env.get("GATEWAY_PUBLIC_URL", "").rstrip("/") != server_url:
+        return None
+    if not env.get("GATEWAY_ADMIN_EMAIL") or not env.get("GATEWAY_ADMIN_PASSWORD"):
+        return None
+    return env["GATEWAY_ADMIN_EMAIL"], env["GATEWAY_ADMIN_PASSWORD"]
 
-    The local server Switch Console runs has no Gateway web page, so there is no
-    API Keys page to click. The password is only sent to your own Switch server.
+
+def gateway_session(server_url: str):
+    """Sign in to the Gateway API as the agents' owner; returns a call(method, path, body).
+
+    Uses the Console-managed server's admin account when it can find it, else asks.
+    The password is only sent to your own Switch server.
     """
-    print(f"Sign in to Switch at {server_url} (the account you use in Switch Console).")
-    email = input("Email: ").strip()
-    password = getpass.getpass("Password: ")
+    login = console_admin_login(server_url)
+    if login:
+        email, password = login
+        print(f"Signing in to {server_url} as {email} (Switch Console's local admin).")
+    else:
+        print(f"Sign in to Switch at {server_url} (the account that owns the agents).")
+        email = input("Email: ").strip()
+        password = getpass.getpass("Password: ")
     opener = urllib.request.build_opener(
         urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
     )
 
-    def gateway(path: str, body: dict) -> dict:
+    def gateway(method: str, path: str, body: dict) -> dict:
         request = urllib.request.Request(
             f"{server_url}/gateway{path}",
             data=json.dumps(body).encode(),
             headers={"Content-Type": "application/json"},
-            method="POST",
+            method=method,
         )
         try:
             with opener.open(request, timeout=30) as response:
@@ -79,8 +102,29 @@ def create_registration_key(server_url: str) -> None:
         except urllib.error.HTTPError as error:
             raise SystemExit(f"{path} failed with {error.code}: {error.read().decode()[:300]}")
 
-    gateway("/auth/login", {"email": email, "password": password})
-    key = gateway("/api-keys", {"label": "blast-radius registration"})
+    gateway("POST", "/auth/login", {"email": email, "password": password})
+    return gateway
+
+
+# The rules Switch stores for each addressing choice Switch Console offers
+# (switch_core.addressing: owner_only_policy, owner_and_owner_agents_policy).
+ADDRESSING_POLICIES = {
+    "owner_only": {"rules": [{"users": [], "agents": [], "owner": True}]},
+    "owner_and_owner_agents": {
+        "rules": [{"users": [], "agents": [], "owner": True, "owner_agents": True}]
+    },
+    "anyone": None,
+}
+
+
+def create_registration_key(server_url: str) -> None:
+    """Sign in to the Gateway API and create a registration key.
+
+    The local server Switch Console runs has no Gateway web page, so there is no
+    API Keys page to click.
+    """
+    gateway = gateway_session(server_url)
+    key = gateway("POST", "/api-keys", {"label": "blast-radius registration"})
     SECRETS_DIR.mkdir(parents=True, exist_ok=True)
     REGISTRATION_KEY_FILE.write_text(key["key"])
     REGISTRATION_KEY_FILE.chmod(0o600)
@@ -134,11 +178,15 @@ def main() -> int:
         create_registration_key(server_url)
         return 0
 
-    for name, display, description, addressing in AGENTS:
+    for name, display, description, _ in AGENTS:
         ensure_registered(server_url, name, display, description, args.overwrite)
-        agent = SwitchAgent(name, server_url)
-        agent.call("update_agent_detail", {"agent_id": agent.agent_id, "addressing": addressing},
-                   bound=False)
+
+    # An agent can't change its own addressing; its owner sets it through the Gateway API.
+    gateway = gateway_session(server_url)
+    for name, _, _, addressing in AGENTS:
+        agent_id = Credentials.load(name).agent_id
+        gateway("PUT", f"/agents/{agent_id}/addressing-policy",
+                {"policy": ADDRESSING_POLICIES[addressing]})
         print(f"{name}: addressing set to {addressing}")
     return 0
 
