@@ -25,6 +25,8 @@ def _batch_id(duplicate_charge_ids: list[int]) -> str:
 def _refund_rows(conn: sqlite3.Connection, item: dict) -> list[dict]:
     """Check one affected order against the database and list its duplicate charges."""
     order_id = item["order_id"]
+    if not item["charge_ids"]:
+        raise RefundError(f"order {order_id} has no charges listed")
     first_charge_id, *duplicate_ids = sorted(item["charge_ids"])
     rows = []
     for charge_id in [first_charge_id, *duplicate_ids]:

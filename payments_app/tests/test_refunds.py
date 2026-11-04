@@ -71,6 +71,22 @@ def test_create_refuses_an_order_with_a_failed_charge_in_the_list(db_path):
     assert rows(db_path, "SELECT id FROM refunds") == []
 
 
+def test_create_refuses_an_order_with_no_charges_listed(db_path):
+    affected = find_affected_customers(db_path)
+    affected[0]["charge_ids"] = []
+
+    with pytest.raises(RefundError):
+        create_refund_batch(affected)
+
+
+def test_create_refuses_an_order_that_has_already_been_refunded(db_path):
+    affected = find_affected_customers(db_path)
+    execute_refund_batch(create_refund_batch(affected), "tushar")
+
+    with pytest.raises(RefundError):
+        create_refund_batch(affected)
+
+
 def test_create_refuses_an_empty_batch(db_path):
     with pytest.raises(RefundError):
         create_refund_batch([])
