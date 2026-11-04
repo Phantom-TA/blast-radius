@@ -26,6 +26,16 @@ WORKSPACE = ROOT / "demo-workspace" / "payments-service"
 EXPECTED_WARNINGS = {"name", "order_id", "amount"}
 
 
+def default_bridge() -> str:
+    """The messaging app's display name: Mattermost when the server has it, else the first."""
+    bridges = SwitchAgent("customer-sim").call("list_bridges", bound=False)
+    if not bridges:
+        raise SystemExit("This Switch server has no messaging app. In Switch Console, turn on "
+                         "'Also run Mattermost' on the server's page (Docker must be running).")
+    chosen = next((bridge for bridge in bridges if bridge["type"] == "mattermost"), bridges[0])
+    return chosen["display_name"]
+
+
 def already_imported() -> bool:
     try:
         SwitchAgent("customer-sim").room_id("support")
@@ -39,6 +49,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="only validate the template")
     parser.add_argument("--workspace", type=Path, default=WORKSPACE,
                         help="the Fixer's folder (default: demo-workspace/payments-service)")
+    parser.add_argument("--bridge", help="messaging app display name (default: Mattermost's)")
     args = parser.parse_args()
 
     gateway = gateway_session(find_server_url())
@@ -67,15 +78,14 @@ def main() -> int:
         workspace.mkdir(parents=True)
         print(f"Created {workspace} for now. `make scenario` fills it.")
 
-    run = gateway("POST", "/rooms/from-template-document", {
+    gateway("POST", "/rooms/from-template-document", {
         "template": document,
         "template_name": "Blast Radius",
-        "inputs": {"workspace": str(workspace)},
+        # The server doesn't pick a default bridge the way Console's form does, so name it.
+        "inputs": {"workspace": str(workspace), "bridge": args.bridge or default_bridge()},
     })
-    print("Created the template's agents and rooms:")
-    for key in ("agents", "rooms", "group"):
-        if run.get(key):
-            print(f"  {key}: {run[key]}")
+    print("Created the support and fixer agents, #support and #finance-approvals. "
+          "Support's kickoff is in #support.")
     return 0
 
 

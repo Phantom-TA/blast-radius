@@ -69,8 +69,9 @@ def test_apology_placeholders_match_the_ones_the_email_code_accepts():
     support = template()["resources"]["support"]["instructions"]
     placeholders = set(re.findall(r"\{(\w+)\}", support))
     assert {"name", "order_id", "amount"} <= placeholders
-    # Anything else in braces must be a template value, so Console fills it in.
-    assert placeholders - {"name", "order_id", "amount"} <= {"bridge"}
+    # Nothing else in braces: an agent's fields can't use a bridge or room param
+    # (the server only resolves those for rooms), and anything else would be filled in.
+    assert placeholders == {"name", "order_id", "amount"}
 
 
 def test_no_word_incident_anywhere_agents_or_people_read():
