@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "post_complaint.py"
@@ -25,3 +26,26 @@ def test_complaint_for_another_order_leaves_out_the_details():
     text = post_complaint.complaint("ORD-1", COMPLAINER)
     assert text.startswith("@support Hi, I was charged twice for order ORD-1.")
     assert "Victor" not in text
+
+
+class NotInSupport:
+    def __init__(self, name):
+        pass
+
+    def room_id(self, name):
+        raise LookupError(name)
+
+
+def test_without_an_order_id_it_says_what_to_run(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(post_complaint, "COMPLAINER_FILE", tmp_path / "missing.json")
+    monkeypatch.setattr(sys, "argv", ["post_complaint.py"])
+    assert post_complaint.main() == 1
+    assert "Run: python run.py seed" in capsys.readouterr().out
+
+
+def test_before_the_template_is_imported_it_says_so(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(post_complaint, "COMPLAINER_FILE", tmp_path / "missing.json")
+    monkeypatch.setattr(post_complaint, "SwitchAgent", NotInSupport)
+    monkeypatch.setattr(sys, "argv", ["post_complaint.py", "ORD-1"])
+    assert post_complaint.main() == 1
+    assert "Import switch/template.yaml" in capsys.readouterr().out
