@@ -74,7 +74,7 @@ python run.py demo
 
 | Command | What it does |
 |---|---|
-| `up` | Starts the payment service (port 8000) and Mailpit (port 8025) in Docker |
+| `up` | Starts the payment service (port 8400) and Mailpit (port 8025) in Docker |
 | `seed` | Rebuilds the database from the fixed seed |
 | `scenario` | Reseeds, recreates the Fixer's workspace, empties Mailpit, posts the complaint |
 | `register` | Registers the Python agents with Switch |
@@ -121,7 +121,7 @@ run.py                All project commands
 - **`docker compose failed`**: start Docker Desktop first, wait until it says it's running, then try again.
 - **`No database at data/payments.db`**: run `python run.py seed`. Run commands from the repo root.
 - **`Mailpit isn't reachable`**: run `python run.py up`. The inbox is at http://localhost:8025.
-- **Port 8000, 1025 or 8025 is already in use**: stop whatever is using it, then run `python run.py up` again.
+- **Port 8400, 1025 or 8025 is already in use**: stop whatever is using it, then run `python run.py up` again. For the payment service you can pick another port instead by setting `PAYMENTS_PORT`.
 - **`verify` shows FAIL before the demo**: that's expected. The checks only pass after the agents finish the work.
 - **`verify` says the bug still isn't fixed after the Fixer finished**: the fix must be checked out in `demo-workspace/payments-service`. If it's on another branch, switch to that branch.
 - **An agent ignores you**: link your chat account to your Switch user. See [switch/SETUP.md](switch/SETUP.md).

@@ -17,7 +17,7 @@ SERVICE_SOURCE = ROOT / "payments_app" / "service"
 WORKSPACE = ROOT / "demo-workspace"
 SERVICE_WORKSPACE = WORKSPACE / "payments-service"
 MAILPIT_API = "http://localhost:8025/api/v1"
-PAYMENTS_HEALTH = "http://localhost:8000/health"
+PAYMENTS_URL = f"http://localhost:{os.environ.get('PAYMENTS_PORT', '8400')}"
 UP_TIMEOUT_SECONDS = 90
 VENV_PYTHON = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 PYTHON = str(VENV_PYTHON) if VENV_PYTHON.exists() else sys.executable
@@ -97,13 +97,13 @@ def cmd_up() -> int:
         return 1
     (ROOT / "data").mkdir(exist_ok=True)
     if subprocess.run(["docker", "compose", "up", "-d", "--build"], cwd=ROOT).returncode != 0:
-        print("docker compose failed. Is Docker Desktop running?")
+        print("docker compose failed. Check Docker Desktop is running and the ports are free.")
         return 1
 
     deadline = time.monotonic() + UP_TIMEOUT_SECONDS
     while time.monotonic() < deadline:
-        if is_up(PAYMENTS_HEALTH) and is_up(f"{MAILPIT_API}/info"):
-            print("Payment service: http://localhost:8000  Mailpit inbox: http://localhost:8025")
+        if is_up(f"{PAYMENTS_URL}/health") and is_up(f"{MAILPIT_API}/info"):
+            print(f"Payment service: {PAYMENTS_URL}  Mailpit inbox: http://localhost:8025")
             return 0
         time.sleep(1)
     print(f"Services did not answer within {UP_TIMEOUT_SECONDS}s. Check: docker compose logs")

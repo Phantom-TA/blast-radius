@@ -4,7 +4,7 @@ services:
     volumes:
       - ./data:/data
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${PAYMENTS_PORT:-8400}:8000"
 
   mailpit:
     image: axllent/mailpit:v1.33.0
