@@ -152,6 +152,8 @@ class Message:
     message_id: str
     thread_id: str | None
     sequence: int
+    # "user" (a person), "agent" or "platform" (Switch itself). None on old rows.
+    sender_kind: str | None = None
 
     @classmethod
     def from_event(cls, frame: dict) -> "Message":
@@ -165,6 +167,7 @@ class Message:
             message_id=payload.get("message_id", ""),
             thread_id=payload.get("thread_id"),
             sequence=frame["id"],
+            sender_kind=payload.get("sender_kind"),
         )
 
     @property
