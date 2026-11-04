@@ -19,6 +19,7 @@ SERVICE_WORKSPACE = WORKSPACE / "payments-service"
 MAILPIT_API = "http://localhost:8025/api/v1"
 PAYMENTS_URL = f"http://localhost:{os.environ.get('PAYMENTS_PORT', '8400')}"
 UP_TIMEOUT_SECONDS = 90
+AGENT_START_SECONDS = 3
 VENV_PYTHON = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 PYTHON = str(VENV_PYTHON) if VENV_PYTHON.exists() else sys.executable
 AGENT_MODULES = ["agents.investigator", "agents.treasurer"]
@@ -58,20 +59,23 @@ def empty_mailpit() -> None:
         print("Mailpit isn't running, so the inbox wasn't emptied. Start it with: python run.py up")
 
 
-def remove_workspace() -> None:
-    """Git marks its object files read-only, which blocks a plain delete on Windows."""
-    if not WORKSPACE.exists():
-        return
-    for folder, _, files in os.walk(WORKSPACE):
+def empty_workspace() -> None:
+    """Empty the Fixer's folder but keep it, because Switch runs the Fixer from this path."""
+    SERVICE_WORKSPACE.mkdir(parents=True, exist_ok=True)
+    # Git marks its object files read-only, which blocks a plain delete on Windows.
+    for folder, _, files in os.walk(SERVICE_WORKSPACE):
         for name in files:
             os.chmod(os.path.join(folder, name), stat.S_IWRITE)
-    shutil.rmtree(WORKSPACE)
+    for item in SERVICE_WORKSPACE.iterdir():
+        if item.is_dir() and not item.is_symlink():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
 
 
 def create_workspace() -> None:
     """Copy the unfixed service into its own git repo. The Fixer agent works here."""
-    remove_workspace()
-    SERVICE_WORKSPACE.mkdir(parents=True)
+    empty_workspace()
     shutil.copytree(
         SERVICE_SOURCE, SERVICE_WORKSPACE / "service", ignore=shutil.ignore_patterns("__pycache__")
     )
@@ -88,7 +92,7 @@ def create_workspace() -> None:
         ["tag", "baseline"],
     ):
         subprocess.run(["git", *args], cwd=SERVICE_WORKSPACE, check=True, capture_output=True)
-    print(f"Created {SERVICE_WORKSPACE.relative_to(ROOT)} with the unfixed service.")
+    print(f"Created {SERVICE_WORKSPACE} with the unfixed service.")
 
 
 def cmd_up() -> int:
@@ -127,27 +131,46 @@ def cmd_register() -> int:
     return run_optional_script("scripts/register_agents.py")
 
 
-def cmd_agents() -> int:
-    if not (ROOT / "agents").is_dir():
-        print("Skipping agents: the agents folder doesn't exist yet (Switch side of the project).")
-        return 0
-    processes = {
-        module: subprocess.Popen([PYTHON, "-m", module], cwd=ROOT) for module in AGENT_MODULES
-    }
+def cmd_rooms() -> int:
+    return run_optional_script("switch/import_template.py")
+
+
+def start_agents() -> dict[str, subprocess.Popen]:
+    return {module: subprocess.Popen([PYTHON, "-m", module], cwd=ROOT) for module in AGENT_MODULES}
+
+
+def stop_agents(processes: dict[str, subprocess.Popen]) -> None:
+    for process in processes.values():
+        process.terminate()
+        process.wait()
+
+
+def stopped_agent_code(processes: dict[str, subprocess.Popen]) -> int | None:
+    """None while every agent is running, otherwise the exit code to report."""
+    for module, process in processes.items():
+        if process.poll() is not None:
+            print(f"{module} stopped with exit code {process.returncode}.")
+            return process.returncode or 1
+    return None
+
+
+def watch_agents(processes: dict[str, subprocess.Popen]) -> int:
     print("Agents running. Press Ctrl+C to stop them.")
+    while True:
+        code = stopped_agent_code(processes)
+        if code is not None:
+            return code
+        time.sleep(1)
+
+
+def cmd_agents() -> int:
+    processes = start_agents()
     try:
-        while True:
-            for module, process in processes.items():
-                if process.poll() is not None:
-                    print(f"{module} stopped with exit code {process.returncode}.")
-                    return process.returncode or 1
-            time.sleep(1)
+        return watch_agents(processes)
     except KeyboardInterrupt:
         return 0
     finally:
-        for process in processes.values():
-            process.terminate()
-            process.wait()
+        stop_agents(processes)
 
 
 def cmd_verify() -> int:
@@ -155,17 +178,33 @@ def cmd_verify() -> int:
 
 
 def cmd_reset() -> int:
-    remove_workspace()
+    empty_workspace()
     empty_mailpit()
-    return cmd_seed()
+    # The seed always picks the same complainer, so a rerun needs that blast room's name again.
+    run_optional_script("switch/archive_rooms.py")
+    code = cmd_seed()
+    print("Now type !reset-all-agents in #support in Mattermost, so Support and Fixer start fresh.")
+    return code
 
 
 def cmd_demo() -> int:
-    for step in (cmd_up, cmd_register, cmd_scenario, cmd_agents):
+    for step in (cmd_up, cmd_register, cmd_rooms):
         code = step()
         if code != 0:
             return code
-    return 0
+
+    # On their first start the agents only see new messages, so they go before the complaint.
+    processes = start_agents()
+    try:
+        time.sleep(AGENT_START_SECONDS)
+        code = stopped_agent_code(processes)
+        if code is None:
+            code = cmd_scenario()
+        return code if code != 0 else watch_agents(processes)
+    except KeyboardInterrupt:
+        return 0
+    finally:
+        stop_agents(processes)
 
 
 COMMANDS = {
@@ -173,10 +212,11 @@ COMMANDS = {
     "seed": (cmd_seed, "rebuild the database from the seed"),
     "scenario": (cmd_scenario, "reseed, recreate the Fixer's workspace, post the complaint"),
     "register": (cmd_register, "register the Python agents with Switch"),
+    "rooms": (cmd_rooms, "create the rooms and Claude Code agents from the Switch template"),
     "agents": (cmd_agents, "start the Investigator and Treasurer agents"),
     "verify": (cmd_verify, "print PASS or FAIL for the finished demo"),
     "reset": (cmd_reset, "go back to the starting state"),
-    "demo": (cmd_demo, "up + register + scenario + agents"),
+    "demo": (cmd_demo, "up + register + rooms + agents + scenario"),
 }
 
 
