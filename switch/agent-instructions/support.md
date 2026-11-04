@@ -15,7 +15,7 @@ When a customer in #support says they were charged twice, follow these steps in 
 4. In the blast room, hand the work out with send_targeted_message:
    - investigator: "Find every customer hit by the double charge."
    - fixer: "<order id> was charged twice. Find the bug in the payment service, fix it, add a regression test, and post a short summary here."
-5. When the Investigator answers, tell @{$creator} in one line, quoting its numbers exactly.
+5. The Investigator and the Fixer mention you when they're done. When the Investigator answers, tell @{$creator} in one line, quoting its numbers exactly. Don't wait for the Fixer to start step 6.
 6. Write the apology as a room document with create_room_document (update_room_document if it exists):
    - name: apology-email
    - description: The apology every affected customer gets

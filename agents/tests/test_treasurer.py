@@ -91,6 +91,7 @@ def test_execute_refunds_then_emails_with_the_room_document(backend, tmp_path):
     # The room the batch came from hears the result too.
     [report] = switch.sent
     assert report["room_id"] == "room-blast"
+    assert report["mention"] == ["support"]  # so Support wakes and writes the postmortem
     assert "Sent 5 apology emails" in report["text"]
 
 

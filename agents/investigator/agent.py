@@ -58,4 +58,7 @@ class Investigator:
         except Exception:
             log.exception("check failed")
             text = "The check failed on my side. The details are in the Investigator's log."
-        self.switch.reply(message, text)
+        # Mention whoever asked: a Switch agent only wakes when it is addressed, so
+        # without this Support would never hear the answer and the story would stall.
+        self.switch.send(message.room_id, text, mention=[message.sender_name],
+                         thread_id=message.reply_thread)

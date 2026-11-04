@@ -21,6 +21,7 @@ from agents.common.switch_client import STATE_DIR, Message, SwitchAgent
 log = logging.getLogger("treasurer")
 
 FINANCE_ROOM = "finance-approvals"
+SUPPORT_AGENT = "support"
 APOLOGY_DOCUMENT = "apology-email"
 FALLBACK_TEMPLATE = Path(__file__).resolve().parent / "apology_template.md"
 STATE_FILE = STATE_DIR / "treasurer.json"
@@ -159,7 +160,7 @@ class Treasurer:
             self.switch.reply(message, failed)
             origin = self._origins().get(batch_id)
             if origin and origin != message.room_id:
-                self.switch.send(origin, f"{refunded} {failed}")
+                self.switch.send(origin, f"{refunded} {failed}", mention=[SUPPORT_AGENT])
 
     def send_emails(self, message: Message, batch_id: str, refunded: str = "") -> None:
         subject, body, source = self.apology(batch_id)
@@ -169,7 +170,9 @@ class Treasurer:
 
         origin = self._origins().get(batch_id)
         if origin and origin != message.room_id:
-            self.switch.send(origin, " ".join(part for part in (refunded, done) if part))
+            # Mention Support so it wakes up and writes the postmortem.
+            self.switch.send(origin, " ".join(part for part in (refunded, done) if part),
+                             mention=[SUPPORT_AGENT])
 
     def apology(self, batch_id: str) -> tuple[str, str, str]:
         """The wording: the room document "apology-email" Support wrote, else the template file."""
