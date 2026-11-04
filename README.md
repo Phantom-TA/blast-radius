@@ -60,7 +60,7 @@ You need Python 3.11+, Docker, and Switch set up as described in [switch/SETUP.m
 python -m venv .venv
 ```
 
-Activate it with `.venv\Scripts\activate` on Windows or `source .venv/bin/activate` on Linux, then:
+On Linux use `python3` for this first command. Activate it with `.venv\Scripts\activate` on Windows or `source .venv/bin/activate` on Linux, then:
 
 ```bash
 pip install -r payments_app/requirements.txt
@@ -125,5 +125,6 @@ run.py                All project commands
 - **`verify` shows FAIL before the demo**: that's expected. The checks only pass after the agents finish the work.
 - **`verify` says the bug still isn't fixed after the Fixer finished**: the fix must be checked out in `demo-workspace/payments-service`. If it's on another branch, switch to that branch.
 - **`verify` says the new test passes on the buggy code, or can't run on the original code**: the regression test has to prove the bug is gone, so it must fail on the original code. Write it against `charge_order` and `FakeProvider`: simulate one timeout, then check there is exactly one charge.
+- **`unknown placeholders` when sending emails**: the wording may only use `{name}`, `{order_id}` and `{amount}`. No email is sent until it's corrected.
 - **An agent ignores you**: link your chat account to your Switch user. See [switch/SETUP.md](switch/SETUP.md).
 - **Windows SmartScreen warns about Switch Console**: choose "More info", then "Run anyway".

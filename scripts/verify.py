@@ -55,6 +55,11 @@ def run_in_workspace(*command: str) -> subprocess.CompletedProcess:
     return subprocess.run(command, cwd=SERVICE_WORKSPACE, capture_output=True, text=True)
 
 
+def last_line(result: subprocess.CompletedProcess) -> str:
+    lines = (result.stdout + result.stderr).strip().splitlines()
+    return lines[-1] if lines else "no output"
+
+
 def changed_files() -> list[str]:
     changed = run_in_workspace("git", "diff", "--name-only", "baseline").stdout.splitlines()
     untracked = run_in_workspace(
@@ -93,11 +98,11 @@ def check_fix() -> tuple[bool, str]:
 
     tests = run_in_workspace(sys.executable, "-m", "pytest", "-q")
     if tests.returncode != 0:
-        return False, "tests fail in the workspace"
+        return False, f"tests fail in the workspace: {last_line(tests)}"
 
     probe = run_in_workspace(sys.executable, "-c", RETRY_PROBE)
     if probe.returncode != 0:
-        return False, f"retry probe crashed: {probe.stderr.strip().splitlines()[-1]}"
+        return False, f"retry probe crashed: {last_line(probe)}"
     charges = probe.stdout.strip()
     if charges != "1":
         return False, f"a timeout plus a retry still creates {charges} charges, expected 1"
