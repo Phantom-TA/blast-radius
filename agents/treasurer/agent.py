@@ -30,6 +30,8 @@ PREPARE = re.compile(r"\bprepare\b", re.IGNORECASE)
 EXECUTE = re.compile(r"\bexecute\s+(?:batch\s+)?`?([\w-]+)`?", re.IGNORECASE)
 EMAILS = re.compile(r"\bsend\s+emails?\s+(?:for\s+)?`?([\w-]+)`?", re.IGNORECASE)
 
+MAIL_DOWN = "I couldn't reach the mail server (is Mailpit running? `make up` starts it)"
+
 HELP = (
     "I handle refunds, and I only take instructions from people. Say:\n"
     "- `@treasurer prepare refunds` to build a refund batch for approval\n"
@@ -64,9 +66,13 @@ class Treasurer:
 
     # Which room asked for each batch, so execute reports back there and finds its wording.
     def _origins(self) -> dict:
-        if self.state_file.exists():
+        try:
             return json.loads(self.state_file.read_text())
-        return {}
+        except FileNotFoundError:
+            return {}
+        except ValueError:
+            log.warning("ignoring unreadable %s", self.state_file)
+            return {}
 
     def _remember(self, batch_id: str, room_id: str) -> None:
         origins = self._origins()
@@ -77,7 +83,8 @@ class Treasurer:
     def handle(self, message: Message) -> None:
         person = self.switch.person_name(message)
         if person is None:
-            log.warning("refused %s (%s): not a person", message.sender_name, message.sender_kind)
+            log.warning("refused %s (kind %s, role %s): not a person",
+                        message.sender_name, message.sender_kind, message.sender_role)
             self.switch.reply(message, NOT_A_PERSON)
             return
 
@@ -94,6 +101,9 @@ class Treasurer:
                 self.switch.reply(message, HELP)
         except self.backend.refusals as error:
             self.switch.reply(message, f"I didn't do that: {error}")
+        except OSError as error:
+            log.warning("mail server unreachable: %s", error)
+            self.switch.reply(message, f"I didn't do that: {MAIL_DOWN}")
         except Exception:
             log.exception("failed on %r", text)
             self.switch.reply(
@@ -109,7 +119,12 @@ class Treasurer:
         batch_id = self.backend.create_refund_batch(affected)
         self._remember(batch_id, message.room_id)
 
-        finance = self.switch.room_id(FINANCE_ROOM)
+        try:
+            finance = self.switch.room_id(FINANCE_ROOM)
+        except LookupError:
+            # Not in #finance-approvals: ask for the approval where the request came from.
+            log.warning("not in #%s, asking for approval in the asking room", FINANCE_ROOM)
+            finance = message.room_id
         self.switch.send(
             finance,
             f"Refund batch `{batch_id}` is waiting for approval.\n"
@@ -117,7 +132,7 @@ class Treasurer:
             f"{summary['currency']} in total (each refund is exactly the duplicate charge)\n"
             f"- Requested by {person} in #{self.switch.room_name(message.room_id)}\n"
             f"- Then I email each customer the approved apology\n\n"
-            f"To approve, reply: `@treasurer execute {batch_id}`",
+            f"Nothing has been refunded yet. To approve, reply: `@treasurer execute {batch_id}`",
             mention=[person],
         )
         if finance != message.room_id:
@@ -133,7 +148,18 @@ class Treasurer:
         refunded = (f"Refunded `{batch_id}`, approved by {person}: {result['refunded']} "
                     f"refunds, {money(result['total'])} in total.")
         self.switch.reply(message, refunded + " Sending the apology emails now.")
-        self.send_emails(message, batch_id, refunded=refunded)
+        try:
+            self.send_emails(message, batch_id, refunded=refunded)
+        except (*self.backend.refusals, OSError) as error:
+            # The money has moved; say so plainly, and how to finish the emails.
+            reason = MAIL_DOWN if isinstance(error, OSError) else str(error)
+            log.warning("refunded %s but emails failed: %s", batch_id, error)
+            failed = (f"The refunds are done, but no apology emails went out: {reason}. "
+                      f"Once that's fixed, say `@treasurer send emails {batch_id}`.")
+            self.switch.reply(message, failed)
+            origin = self._origins().get(batch_id)
+            if origin and origin != message.room_id:
+                self.switch.send(origin, f"{refunded} {failed}")
 
     def send_emails(self, message: Message, batch_id: str, refunded: str = "") -> None:
         subject, body, source = self.apology(batch_id)
@@ -154,6 +180,9 @@ class Treasurer:
             text = self.switch.room_document(room_id, APOLOGY_DOCUMENT)
             if text:
                 subject, body = parse_apology(text)
+                if not body:
+                    raise ValueError(f"the \"{APOLOGY_DOCUMENT}\" document has a subject "
+                                     "but no body")
                 return subject, body, (f"the room document \"{APOLOGY_DOCUMENT}\" in "
                                        f"#{self.switch.room_name(room_id)}")
         log.warning("no %s document found, using %s", APOLOGY_DOCUMENT, FALLBACK_TEMPLATE.name)

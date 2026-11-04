@@ -5,6 +5,7 @@ so the agents can be tested, and run in Switch with BLAST_BACKEND=fake, before t
 real code is merged. They refuse the same things the real code refuses.
 """
 
+import hashlib
 import re
 
 DB_PATH = "fake.db"
@@ -42,10 +43,20 @@ def reset() -> None:
     outbox.clear()
 
 
+def _refunded_orders() -> set[str]:
+    return {item["order_id"] for batch in batches.values() if batch["status"] == "executed"
+            for item in batch["items"]}
+
+
 def find_affected_customers(db_path: str) -> list[dict]:
-    """Each item: customer_id, email, order_id, charge_ids, overcharge_amount (USD)."""
+    """Each item: customer_id, email, order_id, charge_ids, overcharge_amount (USD).
+
+    Like the real query, an order whose duplicate was refunded is no longer affected.
+    """
+    refunded = _refunded_orders()
     return [
-        {key: value for key, value in item.items() if key != "name"} for item in AFFECTED
+        {key: value for key, value in item.items() if key != "name"}
+        for item in AFFECTED if item["order_id"] not in refunded
     ]
 
 
@@ -64,8 +75,12 @@ def create_refund_batch(affected: list[dict]) -> str:
     """Creates a batch with status 'pending_approval'. Returns batch_id."""
     if not affected:
         raise RefundError("nothing to refund")
-    batch_id = f"rb-fake{len(batches) + 1:04d}"
-    batches[batch_id] = {"status": "pending_approval", "items": affected, "approved_by": None}
+    # Like the real code: the same charges always make the same batch id, so a rerun
+    # returns the batch that exists instead of making a second one.
+    duplicates = sorted(charge for item in affected for charge in sorted(item["charge_ids"])[1:])
+    batch_id = "rb-" + hashlib.sha256(",".join(map(str, duplicates)).encode()).hexdigest()[:12]
+    batches.setdefault(batch_id, {"status": "pending_approval", "items": affected,
+                                  "approved_by": None})
     return batch_id
 
 
