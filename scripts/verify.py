@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from agents.postmortem import check_postmortem  # noqa: E402
 from payments_app.service.store import connect  # noqa: E402
 from seed.seed import AFFECTED_CUSTOMERS  # noqa: E402
 
@@ -93,8 +94,8 @@ def pytest_exit_code_on_original_code(changed: list[str]) -> int:
 
 
 def check_fix() -> tuple[bool, str]:
-    if not SERVICE_WORKSPACE.exists():
-        return False, "demo-workspace/payments-service doesn't exist. Run: python run.py scenario"
+    if not (SERVICE_WORKSPACE / "service").exists():
+        return False, "demo-workspace/payments-service is empty. Run: python run.py scenario"
 
     tests = run_in_workspace(sys.executable, "-m", "pytest", "-q")
     if tests.returncode != 0:
@@ -172,15 +173,13 @@ def main() -> int:
         ("Bug fixed with a regression test", check_fix),
         ("Refunds correct with no double refunds", check_refunds),
         ("Apology emails delivered", check_emails),
+        ("Postmortem room document", check_postmortem),
     ]
     all_passed = True
     for name, check in checks:
         passed, detail = check()
         all_passed = all_passed and passed
         print(f"{'PASS' if passed else 'FAIL'}  {name}: {detail}")
-
-    # TODO(Person A): add a check that the postmortem room document exists in Switch.
-    print("TODO  Postmortem room document: check to be added with the Switch side")
     return 0 if all_passed else 1
 
 
