@@ -131,14 +131,23 @@ def cmd_agents() -> int:
     if not (ROOT / "agents").is_dir():
         print("Skipping agents: the agents folder doesn't exist yet (Switch side of the project).")
         return 0
-    processes = [subprocess.Popen([PYTHON, "-m", module], cwd=ROOT) for module in AGENT_MODULES]
+    processes = {
+        module: subprocess.Popen([PYTHON, "-m", module], cwd=ROOT) for module in AGENT_MODULES
+    }
     print("Agents running. Press Ctrl+C to stop them.")
     try:
-        return max(process.wait() for process in processes)
+        while True:
+            for module, process in processes.items():
+                if process.poll() is not None:
+                    print(f"{module} stopped with exit code {process.returncode}.")
+                    return process.returncode or 1
+            time.sleep(1)
     except KeyboardInterrupt:
-        for process in processes:
-            process.terminate()
         return 0
+    finally:
+        for process in processes.values():
+            process.terminate()
+            process.wait()
 
 
 def cmd_verify() -> int:
