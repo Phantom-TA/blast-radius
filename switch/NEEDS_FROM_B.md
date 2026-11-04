@@ -33,11 +33,7 @@ The tests line could then be `python -m pytest payments_app agents/tests`.
 
 The Switch machine is a Mac. Next to the Windows and Linux notes: on macOS use `python3 -m venv .venv` and `source .venv/bin/activate`.
 
-## 4. run.py: optional, a command that only creates the Fixer's workspace
-
-The Fixer's folder in the Console template is `demo-workspace/payments-service`, which `scenario` creates. But `scenario` also posts the complaint, which fails until the template has created `#support`. So on first setup the judge runs `scenario` twice and sees one harmless failure (see switch/SETUP.md, step 6). A `python run.py workspace` that only runs `create_workspace()` would remove that. If you add it, tell me and I'll update SETUP.md.
-
-## 5. run.py reset: archive the old blast room and reset the agents
+## 4. run.py reset: archive the old blast room and reset the agents
 
 The seed always picks the same complainer, so a second run would make Support ask for a `blast-ORD-...` room that already exists. `switch/archive_rooms.py` archives every `blast-` room (history and documents are kept). Please call it from `cmd_reset()`:
 
@@ -50,6 +46,15 @@ The Claude Code agents also still remember the last run, and the Fixer's folder 
 ```
 Now type !reset-all-agents in #support in Mattermost, so Support and Fixer start fresh.
 ```
+
+## 5. run.py demo: import the template, and start the agents before the complaint
+
+`demo` runs `up`, `register`, `scenario`, `agents`. Two things are missing on a fresh machine:
+
+- The rooms and the Claude Code agents come from `python switch/import_template.py` (safe to run twice: it does nothing once #support exists). Please add a `rooms` command for it, and run it in `demo` right after `register`.
+- `scenario` posts the complaint before `agents` starts the Investigator and Treasurer. They resume from where they last stopped, but on their very first start they only see new messages, so anything sent to them before that is missed. Starting the agents (in the background) before `scenario` avoids it.
+
+switch/SETUP.md already follows this order: up, register, import_template, agents, scenario.
 
 ## Interface check (section 8): all good
 
