@@ -2,6 +2,7 @@
 
     python switch/import_template.py           # check it, then create the agents and rooms
     python switch/import_template.py --check   # only ask Switch whether it would work
+    python switch/import_template.py --update  # give the existing agents the current instructions
 
 It does what Console's Templates page does: as the owner, it sends the document
 to the Gateway API (POST /gateway/rooms/from-template-document), and the server
@@ -13,6 +14,8 @@ Python agents it registers.
 import argparse
 import sys
 from pathlib import Path
+
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -36,6 +39,37 @@ def default_bridge() -> str:
     return chosen["display_name"]
 
 
+def update_instructions(gateway, document: str) -> int:
+    """Put the template's current instructions on the agents it created earlier.
+
+    Console fills {$creator} in when it creates an agent; this fills it the same way.
+    """
+    sim = SwitchAgent("customer-sim")
+    usernames = [name for app in sim.call("get_my_context", bound=False)["messaging_apps"]["connected"]
+                 for name in app.get("your_usernames", [])]
+    if not usernames:
+        raise SystemExit("Your messaging account isn't linked yet (see switch/SETUP.md, step 2).")
+    agents = {agent["name"]: agent["id"] for agent in sim.call("list_agents", bound=False)}
+    resources = yaml.safe_load(document)["resources"]
+    for key, resource in resources.items():
+        if resource["type"] != "agent":
+            continue
+        name = resource["name"]
+        if name not in agents:
+            print(f"{name} doesn't exist yet; run this script without --update first.")
+            return 1
+        current = gateway("GET", f"/management/agents/{agents[name]}")["definition"]
+        instructions = resource["instructions"].replace("{$creator}", usernames[0])
+        if current.get("instructions") == instructions:
+            print(f"{name}: instructions already current")
+            continue
+        gateway("PATCH", f"/management/agents/{agents[name]}",
+                {"definition": {**current, "instructions": instructions}})
+        print(f"{name}: instructions updated. Type !reset @{name} in a room it's in "
+              "so a running session picks them up.")
+    return 0
+
+
 def already_imported() -> bool:
     try:
         SwitchAgent("customer-sim").room_id("support")
@@ -47,6 +81,8 @@ def already_imported() -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="only validate the template")
+    parser.add_argument("--update", action="store_true",
+                        help="refresh the instructions of agents this template created")
     parser.add_argument("--workspace", type=Path, default=WORKSPACE,
                         help="the Fixer's folder (default: demo-workspace/payments-service)")
     parser.add_argument("--bridge", help="messaging app display name (default: Mattermost's)")
@@ -66,6 +102,8 @@ def main() -> int:
     print("Switch accepts the template.")
     if args.check:
         return 0
+    if args.update:
+        return update_instructions(gateway, document)
 
     if already_imported():
         print("Already imported: customer-sim is in #support. Nothing to do.")
