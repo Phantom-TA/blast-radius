@@ -66,3 +66,23 @@ def test_the_cursor_survives_a_restart(monkeypatch, tmp_path):
     second = SwitchAgent("investigator", "http://localhost:63238")
     assert second.cursor == 25
     assert "start_from=25" in second._socket_url()
+
+
+def test_rooms_have_an_id_and_leave_out_archived_ones(monkeypatch, tmp_path):
+    from agents.common import switch_client
+
+    credentials = Credentials("customer-sim", "agent-1", "key", "conn-1")
+    monkeypatch.setattr(Credentials, "load", classmethod(lambda cls, name: credentials))
+    monkeypatch.setattr(switch_client, "STATE_DIR", tmp_path)
+    agent = SwitchAgent("customer-sim", "http://localhost:63238")
+    # The shape list_rooms answers with on switch-core 0.31.0.
+    listed = [
+        {"room_id": "r1", "name": "support", "description": "", "connected": False,
+         "archived": False},
+        {"room_id": "r2", "name": "blast-ORD-1", "description": "", "connected": False,
+         "archived": True},
+    ]
+    monkeypatch.setattr(agent, "call", lambda operation, args=None, bound=True: listed)
+    assert [room["id"] for room in agent.rooms()] == ["r1"]
+    assert agent.room_id("#support") == "r1"
+    assert agent.room_name("r1") == "support"

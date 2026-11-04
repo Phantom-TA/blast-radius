@@ -245,8 +245,15 @@ class SwitchAgent:
         self.call("post_message", {"body": text, "thread_id": message.reply_thread})
 
     def rooms(self) -> list[dict]:
-        """The rooms this agent is in, each {id, name, ...}."""
-        return self.call("list_rooms", bound=False)
+        """The rooms this agent is in and that aren't archived, each {id, name, description}.
+
+        list_rooms names the id room_id; this copies it to id.
+        """
+        return [
+            {**room, "id": room["room_id"]}
+            for room in self.call("list_rooms", bound=False)
+            if not room.get("archived")
+        ]
 
     def room_id(self, name: str) -> str:
         for room in self.rooms():
