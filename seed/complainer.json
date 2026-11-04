@@ -1,0 +1,9 @@
+{
+  "order_id": "ORD-100953",
+  "customer_id": "CUS-1386",
+  "customer_name": "Victor Tanaka",
+  "email": "victor.tanaka2@example.com",
+  "description": "Backpack",
+  "amount": 59.0,
+  "currency": "USD"
+}
