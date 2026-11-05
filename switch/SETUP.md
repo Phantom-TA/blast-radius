@@ -33,7 +33,7 @@ Either way, Switch runs on one computer. On a local server only one person can s
 
 1. Open Switch Console and add a server: choose **Run a server on this computer**. Leave **Also run Mattermost** on. Console creates an admin account and signs you in by itself; there is nothing to copy. The first start downloads Mattermost, which takes a few minutes.
 2. Finish the **Setting up Switch** checklist in the sidebar. It must find Claude Code as an agent provider, and this computer must be able to run agents.
-3. **Link your Mattermost account.** On the **Home** page, under **Messaging apps**, select **Link** for **Local Mattermost** and pick your handle. Until you do, the Treasurer refuses you, because Switch can't tell you are its owner.
+3. **Link your Mattermost account.** On the **Home** page, under **Messaging apps**, select **Link** for **Mattermost** and pick your handle. Until you do, the Treasurer refuses you, because Switch can't tell you are its owner.
 4. Open Mattermost from Console. You'll use it to watch and to approve.
 
 ## 3. Get the project
@@ -91,7 +91,7 @@ This runs `switch/import_template.py`, which imports `switch/template.yaml` thro
 - **#support** (Support, Fixer, customer-sim and you) and **#finance-approvals** (Treasurer, Support and you), in a room group called **Blast Radius**, linked to each other;
 - a kickoff message. Support says hello in #support. It may take a minute to start.
 
-To do the same by hand in Console: open **Templates**, paste the contents of `switch/template.yaml`, set **Fixer's folder** to the full path of `demo-workspace/payments-service` in your clone, **Support lead's chat username** to your own username, and **Messaging app** to **Local Mattermost**.
+To do the same by hand in Console: open **Templates**, paste the contents of `switch/template.yaml`, set **Fixer's folder** to the full path of `demo-workspace/payments-service` in your clone, **Support lead's chat username** to your own username, and **Messaging app** to **Mattermost**.
 
 ## 7. Start the Python agents
 
