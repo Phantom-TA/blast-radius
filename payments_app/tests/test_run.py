@@ -129,6 +129,33 @@ def test_create_workspace_gives_a_fresh_repo_in_the_same_folder(tmp_path, monkey
     assert (workspace / ".git").is_dir()
 
 
+@pytest.fixture
+def prepare_steps(monkeypatch):
+    """Replace what prepare and scenario do with a record of what ran."""
+    calls = []
+    monkeypatch.setattr(run, "cmd_seed", lambda: calls.append("seed") or 0)
+    monkeypatch.setattr(run, "create_workspace", lambda: calls.append("workspace"))
+    monkeypatch.setattr(run, "empty_mailpit", lambda: calls.append("mailpit"))
+    monkeypatch.setattr(run, "run_optional_script", lambda script: calls.append(script) or 0)
+    return calls
+
+
+def test_prepare_sets_up_the_story_without_posting_the_complaint(prepare_steps):
+    assert run.cmd_prepare() == 0
+    assert prepare_steps == ["seed", "workspace", "mailpit"]
+
+
+def test_scenario_is_prepare_plus_the_complaint(prepare_steps):
+    assert run.cmd_scenario() == 0
+    assert prepare_steps == ["seed", "workspace", "mailpit", "scripts/post_complaint.py"]
+
+
+def test_scenario_posts_no_complaint_if_the_seed_fails(prepare_steps, monkeypatch):
+    monkeypatch.setattr(run, "cmd_seed", lambda: 1)
+    assert run.cmd_scenario() == 1
+    assert prepare_steps == []
+
+
 def test_reset_archives_the_old_room_and_reminds_about_the_agents(monkeypatch, capsys, tmp_path):
     scripts = []
     monkeypatch.setattr(run, "SERVICE_WORKSPACE", tmp_path / "payments-service")

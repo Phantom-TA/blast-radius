@@ -118,12 +118,19 @@ def cmd_seed() -> int:
     return run_python("-m", "seed.seed")
 
 
-def cmd_scenario() -> int:
+def cmd_prepare() -> int:
     code = cmd_seed()
     if code != 0:
         return code
     create_workspace()
     empty_mailpit()
+    return 0
+
+
+def cmd_scenario() -> int:
+    code = cmd_prepare()
+    if code != 0:
+        return code
     return run_optional_script("scripts/post_complaint.py")
 
 
@@ -183,7 +190,7 @@ def cmd_reset() -> int:
     # The seed always picks the same complainer, so a rerun needs that blast room's name again.
     run_optional_script("switch/archive_rooms.py")
     code = cmd_seed()
-    print("Now type !reset-all-agents in #support in Mattermost, so Support and Fixer start fresh.")
+    print("Now type !reset-all-agents in #support, so Support and Fixer start fresh.")
     return code
 
 
@@ -210,7 +217,8 @@ def cmd_demo() -> int:
 COMMANDS = {
     "up": (cmd_up, "start the payment service and Mailpit in Docker"),
     "seed": (cmd_seed, "rebuild the database from the seed"),
-    "scenario": (cmd_scenario, "reseed, recreate the Fixer's workspace, post the complaint"),
+    "prepare": (cmd_prepare, "reseed, recreate the Fixer's workspace, empty Mailpit"),
+    "scenario": (cmd_scenario, "prepare, then post the customer's complaint"),
     "register": (cmd_register, "register the Python agents with Switch"),
     "rooms": (cmd_rooms, "create the rooms and Claude Code agents from the Switch template"),
     "agents": (cmd_agents, "start the Investigator and Treasurer agents"),
