@@ -1,4 +1,6 @@
-from agents.common.switch_client import Credentials, Message, SwitchAgent
+import pytest
+
+from agents.common.switch_client import Credentials, Message, SwitchAgent, SwitchError
 
 
 def frame(**payload):
@@ -32,6 +34,59 @@ def test_message_from_event():
 
 def test_a_top_level_message_is_answered_in_its_own_thread():
     assert Message.from_event(frame()).reply_thread == "msg-9"
+
+
+class RecordingAgent(SwitchAgent):
+    """A SwitchAgent with no server: calls are recorded, and answered from a table."""
+
+    def __init__(self, answers=None):
+        self.calls = []
+        self.answers = answers or {}
+
+    def call(self, operation, args=None, bound=True):
+        self.calls.append((operation, args))
+        answer = self.answers.get(operation)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+
+def context(*usernames_by_app):
+    return {"messaging_apps": {"connected": [{"your_usernames": names}
+                                             for names in usernames_by_app]}}
+
+
+def test_is_owner_checks_every_linked_app_and_ignores_case():
+    agent = RecordingAgent({"get_my_context": context(["amiya"], ["Amiya.Singh"])})
+    assert agent.is_owner("amiya.singh")
+    assert agent.is_owner("AMIYA")
+
+
+def test_is_owner_refuses_anyone_else_and_an_owner_with_nothing_linked():
+    assert not RecordingAgent({"get_my_context": context(["amiya"])}).is_owner("tushar")
+    assert not RecordingAgent({"get_my_context": context([])}).is_owner("amiya")
+
+
+def test_send_targets_the_people_it_mentions():
+    agent = RecordingAgent()
+    agent.send("room-1", "Done.", mention=["support"], thread_id="root-1")
+    assert agent.calls[-1] == ("send_targeted_message", {
+        "body": "Done.", "target_names": ["support"], "thread_id": "root-1",
+    })
+
+
+def test_send_still_answers_someone_who_is_not_a_room_participant():
+    agent = RecordingAgent({
+        "send_targeted_message": SwitchError(400, "Targets not in room: tushar. Room ..."),
+    })
+    agent.send("room-1", "Done.", mention=["tushar"], thread_id="root-1")
+    assert agent.calls[-1] == ("post_message", {"body": "@tushar Done.", "thread_id": "root-1"})
+
+
+def test_send_does_not_hide_any_other_failure():
+    agent = RecordingAgent({"send_targeted_message": SwitchError(500, "server error")})
+    with pytest.raises(SwitchError):
+        agent.send("room-1", "Done.", mention=["support"])
 
 
 def test_socket_url_reuses_the_connection_id_and_resumes_from_the_cursor(monkeypatch, tmp_path):

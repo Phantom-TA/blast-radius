@@ -293,15 +293,33 @@ class SwitchAgent:
     def sender_is_person(self, message: Message) -> bool:
         return person_name(message) is not None
 
+    def is_owner(self, name: str) -> bool:
+        """Whether this chat username is one of the accounts this agent's owner has linked."""
+        context = self.call("get_my_context", bound=False)
+        usernames = (
+            username
+            for app in context["messaging_apps"]["connected"]
+            for username in app.get("your_usernames", [])
+        )
+        return name.casefold() in {username.casefold() for username in usernames}
+
     def send(self, room_id: str, text: str, mention: list[str] | None = None,
              thread_id: str | None = None) -> None:
         """Post into a room. Names in mention are @mentioned, which notifies them."""
         self.connect_to_room(room_id)
         if mention:
-            self.call("send_targeted_message",
-                      {"body": text, "target_names": mention, "thread_id": thread_id})
-        else:
-            self.call("post_message", {"body": text, "thread_id": thread_id})
+            try:
+                self.call("send_targeted_message",
+                          {"body": text, "target_names": mention, "thread_id": thread_id})
+                return
+            except SwitchError as error:
+                if "Targets not in room" not in error.detail:
+                    raise
+                # Someone on Discord can post in a public channel without being a room
+                # participant, and Switch refuses to target them. The answer still goes out.
+                log.info("%s not in room %s, naming them instead", mention, room_id)
+                text = " ".join(f"@{name}" for name in mention) + " " + text
+        self.call("post_message", {"body": text, "thread_id": thread_id})
 
     def room_document(self, room_id: str, name: str) -> str | None:
         """The content of the room document with this name, or None if the room has none."""
