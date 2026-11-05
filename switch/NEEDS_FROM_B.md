@@ -1,97 +1,48 @@
 # Switch side: handoff to Person B
 
-From Person A (branch `feat/switch-agents`), for Person B (branch `feat/payments-core`).
+From Person A (branch `feat/switch-agents`), for Person B. Updated 5 Nov, for PR #3.
 
-**Do you need to do anything right now? No.** Nothing here blocks either of us. My code already runs against your branch as it is (tested against `dfd4d98`). The changes below are for when we merge, so `make demo` and `make verify` cover the Switch side too. I only edited my own files: `agents/`, `switch/`, `scripts/register_agents.py` and `scripts/post_complaint.py`.
+**What you need to do: merge PR #3. Nothing else.** It only touches `agents/`, `switch/` and this file, and it already contains `main` (merged cleanly, no conflicts). On the merged code all 138 tests pass (`python -m pytest payments_app agents/tests`).
 
-## What the Switch side is
+## Your five items from the last handoff: all done, and checked
 
-| File | What it does |
+| Item | Checked how |
 |---|---|
-| `agents/common/switch_client.py` | The connection to Switch: registers an agent, keeps its WebSocket open (answers pings, reconnects, resumes where it stopped), and posts, mentions and reads room documents |
-| `agents/common/backend.py` | Loads your functions from `payments_app`. With `BLAST_BACKEND=fake` it loads `agents/tests/fakes.py` instead |
-| `agents/investigator/` | `python -m agents.investigator`. When @mentioned, it calls `find_affected_customers()` and `summarize()` and posts the counts, the total and the five biggest overcharges |
-| `agents/treasurer/` | `python -m agents.treasurer`. `prepare refunds` calls `create_refund_batch()` and posts the batch in #finance-approvals for a person; `execute <batch id>` calls `execute_refund_batch(batch_id, approved_by=<that person>)`, then `send_apology_emails()` with the wording Support wrote as the room document "apology-email" |
-| `agents/postmortem.py` | `check_postmortem()` for `verify.py` (item 1 below) |
-| `switch/template.yaml` | The Switch Console template: the Support and Fixer Claude Code agents, #support and #finance-approvals. Generated from `switch/template.src.yaml` and the `.md` instructions by `switch/build_template.py` |
-| `switch/import_template.py` | Imports that template through Switch's API, so nobody clicks through Console |
-| `switch/archive_rooms.py` | Archives old `blast-` rooms so a rerun starts clean |
-| `scripts/register_agents.py` | `make register`: registers investigator, treasurer and customer-sim and sets who may instruct each |
-| `scripts/post_complaint.py` | The last step of your `scenario`: posts the complaint in #support as customer-sim, using `seed/complainer.json` |
-| `switch/SETUP.md` | The judge's setup steps, in order |
+| `verify.py` postmortem check | Your `verify.py` printed 4 of 4 PASS on a full run, the postmortem line included |
+| README installs both requirement files | Read it; `.venv` kept at the repo root as the Fixer needs |
+| macOS line in the README | Read it |
+| `demo`: `rooms` command, agents start before the complaint | Read `run.py`. Emptying the Fixer's folder instead of deleting it is better than what I asked for: a running Fixer session keeps a valid folder |
+| `reset` archives old blast rooms and prints the `!reset-all-agents` reminder | Read `run.py` |
 
-Two things to know about how the money is protected:
+## What PR #3 adds, and why
 
-- **Switch blocks agents from the Treasurer.** It is registered "people only" (any linked person, no agent). When an agent @mentions it, Switch itself replies in the room: "You're not permitted to direct messages to me in this room". We tested it with our own Claude Code agent. In the story, Support hands the refunds to the Treasurer like any other job, gets that refusal, and asks the person.
-- **The Treasurer checks again in its own code**, and `execute_refund_batch` checks `approved_by` too. We tested that with Switch's rule opened by mistake: the code still refused the agent.
+PR #1 was merged before these five commits. Each one fixes something a full rehearsal in Switch showed:
 
-## What I need at merge time
+1. **Agents mention whoever asked when a job is done** (`98c222f`). A Switch agent only wakes up when it is @mentioned. The Investigator and Fixer answered without mentioning Support, so Support never relayed the numbers or wrote the apology, and the story stopped. Now the Investigator mentions the asker, the Fixer is told to mention Support, and the Treasurer mentions Support in its report back to the blast room. **Without this commit the demo stalls**, which is why `main` needs it.
+2. **Support doesn't quote `@treasurer`** (`9bb7dfe`). Switch reads every `@name` as addressing that agent, even inside backticks. Support's "please send `@treasurer prepare refunds`" drew a second refusal.
+3. **A leftover room group can't block the story** (`803405f`). An earlier import left an empty "Blast Radius" group, Switch refused to file the new room under an ambiguous name, and Support stopped to ask. `switch/import_template.py` now removes an empty leftover group, and Support creates the room without a group rather than stopping.
+4. **No hardcoded Mattermost connection name** (`531a399`). Console names a fresh connection "Mattermost", not "Local Mattermost".
+5. **`switch/rejoin_agents.py`** (`0d1126f`). This is for agents that were registered while Mattermost was down: their Mattermost bot accounts then miss the channels, and their posts show under the owner's name or not at all.
 
-### 1. `scripts/verify.py`: the postmortem check (replaces the TODO)
+## What a full run showed (5 Nov, on Switch Console 0.40.1)
 
-```python
-from agents.postmortem import check_postmortem  # noqa: E402
+From the complaint to the postmortem, through Mattermost, against your `payments_app` with a seeded database:
 
-    checks = [
-        ("Bug fixed with a regression test", check_fix),
-        ("Refunds correct with no double refunds", check_refunds),
-        ("Apology emails delivered", check_emails),
-        ("Postmortem room document", check_postmortem),
-    ]
-```
+- Support opened `#blast-ORD-100953`. The Investigator posted 313 customers, 312 silent, $21,607.00. The Fixer committed the fix with a regression test on `fix/double-charge`.
+- **Switch refused Support's `@treasurer prepare refunds`** under the Treasurer's own name. The person then prepared the batch, and approved it in #finance-approvals.
+- 313 refunds and 313 emails went out, the complainer's included. Support wrote the postmortem, quoting every number exactly.
+- Your `verify.py`: 4 of 4 PASS.
 
-Then delete the two TODO lines at the end of `main()`. `check_postmortem()` returns `(passed, detail)` like your checks and never raises. It looks in every `blast-<order id>` room for a room document named `postmortem`, reading as the Switch owner so it never disturbs a running agent.
+## Two things we learned about the setup (already in `switch/SETUP.md`)
 
-### 2. `README.md`: install the agents' requirements too
+- **Run only Console's own Mattermost.** My laptop also had a hand-started Mattermost on port 8065. After a server restart, Console set up its own, and Switch's connection broke (`Mattermost post /users/login failed`). The fix was to disconnect the old connection and toggle Mattermost off and on. A fresh Console install has only one Mattermost, so judges won't meet this.
+- **Docker must be running when `make register` runs**, so each Python agent gets its Mattermost account.
 
-The agents need `websockets` (and `pyyaml` for their tests), which aren't in `payments_app/requirements.txt`:
+## What my code relies on in yours (unchanged, please keep)
 
-```bash
-pip install -r payments_app/requirements.txt -r agents/requirements.txt
-```
-
-The tests line could become `python -m pytest payments_app agents/tests` (77 tests on my side).
-
-Please keep the virtualenv at `.venv` in the repo root, as the README says now. The Fixer runs your service's tests with `../../.venv/bin/python` from `demo-workspace/payments-service`, because the shell Switch Console starts for it has no virtualenv active.
-
-### 3. `README.md`: a macOS line
-
-The Switch machine is a Mac. Next to the Windows and Linux notes: on macOS use `python3 -m venv .venv` and `source .venv/bin/activate`.
-
-### 4. `run.py demo`: import the template, and start the agents before the complaint
-
-`demo` runs `up`, `register`, `scenario`, `agents`. On a fresh machine two things are missing:
-
-- The rooms and the Claude Code agents come from `python switch/import_template.py`. It is safe to run twice: it does nothing once #support exists. Please add a `rooms` command for it and run it in `demo` right after `register`.
-- `scenario` posts the complaint before `agents` starts the Investigator and Treasurer. They resume from where they last stopped, but on their very first start they only see new messages, so anything sent to them before that is missed. Starting the agents (in the background) before `scenario` avoids it.
-
-`switch/SETUP.md` already uses this order: up, register, import_template, agents, scenario.
-
-### 5. `run.py reset`: archive the old blast room and reset the agents
-
-The seed always picks the same complainer, so a second run would make Support ask for a `blast-ORD-100953` room that already exists. Please call this from `cmd_reset()`:
-
-```python
-    run_optional_script("switch/archive_rooms.py")
-```
-
-And print at the end of `cmd_reset()`:
-
-```
-Now type !reset-all-agents in #support in Mattermost, so Support and Fixer start fresh.
-```
-
-## What my code relies on in yours (please keep these)
-
-I ran both agents against your real code with a seeded scratch database, including the failure cases. Everything matches section 8 of the context file:
-
-- 313 affected, 312 silent, $21,607.00. Prepare twice gives the same batch id; execute twice is refused; prepare after refunding finds nothing; 313 refunds in the database.
-- A wording typo is refused by `send_apology_emails` before any email goes out. With the mail server down, a retry later sends all 313, and a second retry sends nobody twice.
-
-So please keep:
-
-- `RefundError`, `ValueError` and the "No database at ..." `FileNotFoundError` messages short and readable. The agents show them in the room as they are.
-- The placeholders `{name}`, `{order_id}`, `{amount}`, and only those. Support is told to use exactly these.
-- `create_refund_batch` returning the existing batch for the same charges, and `send_apology_emails` skipping customers already emailed. The Treasurer's retry command relies on both.
-- `seed/complainer.json` with `order_id`, `customer_name`, `description` and `amount`. `post_complaint.py` reads them.
-- `charge_order(provider, order_id, amount_cents)` and `FakeProvider(conn, should_timeout=None, now=None)`. The Fixer is told not to change these signatures, because your `verify.py` probe calls them.
+- `RefundError`, `ValueError` and the "No database at ..." messages stay short and readable. The agents show them in the room as they are.
+- Only the placeholders `{name}`, `{order_id}` and `{amount}`.
+- `create_refund_batch` returns the existing batch for the same charges, and `send_apology_emails` skips customers already emailed. The Treasurer's retry relies on both.
+- `seed/complainer.json` keeps `order_id`, `customer_name`, `description` and `amount`.
+- `charge_order(provider, order_id, amount_cents)` and `FakeProvider(conn, should_timeout=None, now=None)` keep their signatures.
+- The Fixer's folder stays at `demo-workspace/payments-service`, with `.venv` two folders up.
