@@ -30,15 +30,13 @@ def report(backend) -> str:
         f"{complained} complained. **{summary['silent_count']} have not said anything yet.**",
         "",
         f"Biggest {min(TOP_ROWS, summary['count'])} overcharges:",
-        "",
-        "| Customer | Email | Order | Charges | Overcharge |",
-        "|---|---|---|---|---|",
     ]
     biggest = sorted(affected, key=lambda item: (-item["overcharge_amount"], item["order_id"]))
+    # A list, not a Markdown table: Discord shows tables as raw pipe characters.
     for item in biggest[:TOP_ROWS]:
         lines.append(
-            f"| {item['customer_id']} | {item['email']} | {item['order_id']} "
-            f"| {len(item['charge_ids'])} | {money(item['overcharge_amount'])} |"
+            f"- {item['customer_id']}, {item['email']}, {item['order_id']}: "
+            f"{len(item['charge_ids'])} charges, {money(item['overcharge_amount'])} over"
         )
     lines += ["", "Read-only check of the payments database. Nothing was changed."]
     return "\n".join(lines)
