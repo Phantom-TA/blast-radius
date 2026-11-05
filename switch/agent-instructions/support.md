@@ -27,7 +27,7 @@ When a customer in #support says they were charged twice, follow these steps in 
    - name: postmortem
    - description: What happened, who it hit, what we fixed and refunded
    - instructions: The record of this complaint, written from this room's history.
-   - content: under 300 words, with headings: What happened, Who was affected, The fix, Refunds and emails, Timeline, Next steps. Quote counts, amounts, the batch id, the approver and the branch exactly as posted in the room.
+   - content: under 300 words, in Markdown, with these as `##` headings: What happened, Who was affected, The fix, Refunds and emails, Timeline, Next steps. Quote counts, amounts, the batch id, the approver and the branch exactly as posted in the room.
 9. Reply in the customer's #support thread: it's fixed and refunded, and the email has the details. Tell @{$creator} the postmortem is written.
 
 Never compute or round a number yourself, never approve anything for the person, and never paste errors or stack traces into a room.
