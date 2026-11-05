@@ -76,7 +76,8 @@ resources:
     name: support
     description: Acme Store's customer support desk. Customers write here.
     bridge: "{bridge}"
-    agents: [support, customer-sim]
+    # fixer sits here too, so !reset-all-agents in #support resets both Claude Code agents.
+    agents: [support, fixer, customer-sim]
     users: ["{$creator}"]
     instructions: |
       @include room-instructions/support.md

@@ -36,13 +36,16 @@ def test_report_when_nobody_is_affected():
     assert report(backend).startswith("No double charges found")
 
 
-def test_replies_in_the_thread_that_asked():
+def test_answers_in_the_asking_thread_and_mentions_whoever_asked():
     switch = FakeSwitch()
-    asked = message("@investigator how many customers were hit?", role=None)
+    asked = message("@investigator how many customers were hit?", sender="@support:localhost",
+                    role=None, thread_id="root-3")
     Investigator(switch, BACKEND).handle(asked)
-    [(replied_to, text)] = switch.replies
-    assert replied_to is asked
-    assert "5 customers were double charged" in text
+    [post] = switch.sent
+    assert post["room_id"] == "room-blast" and post["thread_id"] == "root-3"
+    # Without the mention, Support is never woken and the story stalls.
+    assert post["mention"] == ["support"]
+    assert "5 customers were double charged" in post["text"]
 
 
 def test_a_missing_database_is_explained_without_a_stack_trace():
@@ -52,6 +55,6 @@ def test_a_missing_database_is_explained_without_a_stack_trace():
     backend = SimpleNamespace(**(BACKEND.__dict__ | {"find_affected_customers": missing}))
     switch = FakeSwitch()
     Investigator(switch, backend).handle(message("@investigator check"))
-    [(_, text)] = switch.replies
-    assert text == ("I couldn't read the payments database: "
+    [post] = switch.sent
+    assert post["text"] == ("I couldn't read the payments database: "
                     "No database at data/payments.db. Run: python run.py seed")

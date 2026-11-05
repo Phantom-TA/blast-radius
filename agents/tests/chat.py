@@ -17,7 +17,8 @@ class FakeSwitch:
         self.replies.append((message, text))
 
     def send(self, room_id, text, mention=None, thread_id=None) -> None:
-        self.sent.append({"room_id": room_id, "text": text, "mention": mention})
+        self.sent.append({"room_id": room_id, "text": text, "mention": mention,
+                          "thread_id": thread_id})
 
     def rooms(self) -> list[dict]:
         return [{"id": room_id, "name": name} for room_id, name in ROOMS.items()]

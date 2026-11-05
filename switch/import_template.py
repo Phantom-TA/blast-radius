@@ -24,6 +24,7 @@ from agents.common.gateway import gateway_session  # noqa: E402
 from agents.common.switch_client import SwitchAgent, find_server_url  # noqa: E402
 
 TEMPLATE = ROOT / "switch" / "template.yaml"
+GROUP = "Blast Radius"
 WORKSPACE = ROOT / "demo-workspace" / "payments-service"
 # The apology placeholders are meant to stay as written: the Treasurer's emails fill them.
 EXPECTED_WARNINGS = {"name", "order_id", "amount"}
@@ -108,6 +109,13 @@ def main() -> int:
     if already_imported():
         print("Already imported: customer-sim is in #support. Nothing to do.")
         return 0
+
+    # A group left over from an earlier import (its rooms gone) would make the name
+    # "Blast Radius" ambiguous, and Support could no longer file its rooms under it.
+    for group in gateway("GET", "/room-groups"):
+        if group.get("name") == GROUP and not group.get("room_count"):
+            gateway("DELETE", f"/room-groups/{group['id']}")
+            print(f"Removed an empty \"{GROUP}\" group left over from an earlier import.")
 
     workspace = args.workspace.resolve()
     if not workspace.exists():
