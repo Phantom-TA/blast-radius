@@ -69,9 +69,46 @@ def test_apology_placeholders_match_the_ones_the_email_code_accepts():
     support = template()["resources"]["support"]["instructions"]
     placeholders = set(re.findall(r"\{(\w+)\}", support))
     assert {"name", "order_id", "amount"} <= placeholders
-    # Nothing else in braces: an agent's fields can't use a bridge or room param
-    # (the server only resolves those for rooms), and anything else would be filled in.
-    assert placeholders == {"name", "order_id", "amount"}
+    # Nothing else in braces but the one string param: an agent's fields can't use a bridge
+    # or room param (the server only resolves those for rooms), and anything else would be
+    # filled in.
+    assert placeholders == {"name", "order_id", "amount", "support_lead"}
+
+
+def test_every_param_an_agent_uses_is_declared():
+    document = template()
+    assert document["params"]["support_lead"]["type"] == "string"
+    assert document["params"]["support_lead"]["required"] is True
+
+
+def test_support_and_fixer_are_open_so_the_support_lead_can_reach_them():
+    resources = template()["resources"]
+    assert resources["support"]["addressing"] == "anyone"
+    assert resources["fixer"]["addressing"] == "anyone"
+
+
+def test_rooms_are_public_so_both_people_see_them():
+    resources = template()["resources"]
+    assert resources["support_room"]["channel_type"] == "channel_public"
+    assert resources["finance_room"]["channel_type"] == "channel_public"
+    assert "channel_type: channel_public" in resources["support"]["instructions"]
+
+
+def test_the_template_uses_discord_when_it_can_and_mattermost_otherwise():
+    assert template()["params"]["bridge"]["default"] == ["Discord", "Mattermost", "$first"]
+
+
+def test_the_support_lead_approves_the_work_and_the_finance_lead_the_money():
+    resources = template()["resources"]
+    support = resources["support"]["instructions"]
+    assert "@{support_lead} to approve the wording" in support
+    assert "ask @{$creator} to mention the Treasurer" in support
+    assert "ask @{support_lead} to approve the change" in resources["fixer"]["instructions"]
+
+
+def test_no_instruction_assumes_a_particular_chat_app():
+    for key in ("support", "fixer"):
+        assert "mattermost" not in template()["resources"][key]["instructions"].lower()
 
 
 def test_no_word_incident_anywhere_agents_or_people_read():
