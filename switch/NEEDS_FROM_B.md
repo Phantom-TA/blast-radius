@@ -16,13 +16,15 @@ From Person A (branch `feat/switch-agents`), for Person B. Updated 5 Nov, for PR
 
 ## What PR #3 adds, and why
 
-PR #1 was merged before these five commits. Each one fixes something a full rehearsal in Switch showed:
+PR #1 was merged before these commits. Each one fixes something a full rehearsal in Switch showed:
 
 1. **Agents mention whoever asked when a job is done** (`98c222f`). A Switch agent only wakes up when it is @mentioned. The Investigator and Fixer answered without mentioning Support, so Support never relayed the numbers or wrote the apology, and the story stopped. Now the Investigator mentions the asker, the Fixer is told to mention Support, and the Treasurer mentions Support in its report back to the blast room. **Without this commit the demo stalls**, which is why `main` needs it.
 2. **Support doesn't quote `@treasurer`** (`9bb7dfe`). Switch reads every `@name` as addressing that agent, even inside backticks. Support's "please send `@treasurer prepare refunds`" drew a second refusal.
 3. **A leftover room group can't block the story** (`803405f`). An earlier import left an empty "Blast Radius" group, Switch refused to file the new room under an ambiguous name, and Support stopped to ask. `switch/import_template.py` now removes an empty leftover group, and Support creates the room without a group rather than stopping.
 4. **No hardcoded Mattermost connection name** (`531a399`). Console names a fresh connection "Mattermost", not "Local Mattermost".
 5. **`switch/rejoin_agents.py`** (`0d1126f`). This is for agents that were registered while Mattermost was down: their Mattermost bot accounts then miss the channels, and their posts show under the owner's name or not at all.
+
+6. **The Fixer is a member of #support.** Your `reset` tells people to type `!reset-all-agents` in #support, but that only resets agents in that room. The Fixer wasn't there, so it kept the last run's memory. With the Fixer in #support, one command resets both Claude Code agents. Nothing changes on your side.
 
 ## What a full run showed (5 Nov, on Switch Console 0.40.1)
 
