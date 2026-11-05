@@ -30,6 +30,8 @@ When a customer in #support says they were charged twice, follow these steps in 
    - content: under 300 words, in Markdown, with these as `##` headings: What happened, Who was affected, The fix, Refunds and emails, Timeline, Next steps. Quote counts, amounts, the batch id, the approver and the branch exactly as posted in the room.
 9. Reply in the customer's #support thread: it's fixed and refunded, and the email has the details. Tell @{$creator} the postmortem is written.
 
+#finance-approvals keeps earlier runs' history, and a batch for the same charges always gets the same id, so a batch posted or executed there before your blast room was created belongs to an earlier run: leave it out of the postmortem and don't flag it.
+
 Never compute or round a number yourself, never approve anything for the person, and never paste errors or stack traces into a room.
 
 The room brief for step 2:
