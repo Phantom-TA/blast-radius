@@ -3,7 +3,7 @@
 from agents.common.switch_client import Message, person_name
 
 ROOMS = {"room-blast": "blast-ORD-100953", "room-finance": "finance-approvals"}
-PEOPLE = {"@amiyasingh05:localhost": "amiyasingh05"}
+PEOPLE = {"@amiyasingh05:localhost": "amiyasingh05", "@colleague:localhost": "colleague"}
 
 
 class FakeSwitch:
@@ -12,6 +12,7 @@ class FakeSwitch:
         self.sent: list[dict] = []
         # {(room_id, document name): content}
         self.documents = documents or {}
+        self.owner_lookup_error: Exception | None = None
 
     def reply(self, message: Message, text: str) -> None:
         self.replies.append((message, text))
@@ -31,6 +32,11 @@ class FakeSwitch:
 
     def person_name(self, message: Message) -> str | None:
         return person_name(message)  # the real rule, not a copy
+
+    def is_owner(self, name: str) -> bool:
+        if self.owner_lookup_error:
+            raise self.owner_lookup_error
+        return name.casefold() == "amiyasingh05"
 
     def room_document(self, room_id: str, name: str) -> str | None:
         return self.documents.get((room_id, name))

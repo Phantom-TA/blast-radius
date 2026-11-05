@@ -6,7 +6,7 @@ import pytest
 
 from agents.tests import fakes
 from agents.tests.chat import FakeSwitch, message
-from agents.treasurer.agent import HELP, MAIL_DOWN, NOT_A_PERSON, Treasurer
+from agents.treasurer.agent import HELP, MAIL_DOWN, NOT_THE_OWNER, Treasurer
 
 WORDING = "Subject: Sorry about {order_id}\nHi {name}, we refunded {amount}."
 
@@ -48,20 +48,27 @@ def prepared(run) -> str:
 
 @pytest.mark.parametrize("role", [None, "", "guest", "agent"])
 def test_anything_but_a_recognised_person_is_refused(run, role):
-    assert run.say("@treasurer prepare refunds", sender="@x:localhost", role=role) == NOT_A_PERSON
+    assert run.say("@treasurer prepare refunds", sender="@x:localhost", role=role) == NOT_THE_OWNER
     assert fakes.batches == {}
 
 
-def test_an_agent_cannot_execute_a_batch_a_person_prepared(run):
+def test_an_agent_cannot_execute_a_batch_the_owner_prepared(run):
     batch_id = prepared(run)
     assert run.say(f"@treasurer execute {batch_id}", sender="@support:localhost",
-                   role=None) == NOT_A_PERSON
+                   role=None) == NOT_THE_OWNER
     assert fakes.batches[batch_id]["status"] == "pending_approval"
     assert fakes.outbox == []
 
 
+def test_the_support_lead_cannot_execute_a_batch_either(run):
+    batch_id = prepared(run)
+    assert run.say(f"@treasurer execute {batch_id}", sender="@colleague:localhost",
+                   role=None) == NOT_THE_OWNER
+    assert fakes.batches[batch_id]["status"] == "pending_approval"
+
+
 @pytest.mark.parametrize("role", ["owner", "admin", "member"])
-def test_any_recognised_person_may_approve(run, role):
+def test_the_owner_may_approve_whatever_their_workspace_role(run, role):
     batch_id = prepared(run)
     run.say(f"@treasurer execute {batch_id}", role=role)
     assert fakes.batches[batch_id]["status"] == "executed"
@@ -104,7 +111,8 @@ def test_preparing_twice_gives_the_same_batch(run):
     first = prepared(run)
     run.say("@treasurer prepare refunds")
     assert list(fakes.batches) == [first]
-    assert run.switch.sent[-1]["text"].startswith(f"Refund batch `{first}`")
+    assert run.switch.sent[-2]["text"].startswith(f"Refund batch `{first}`")
+    assert run.switch.sent[-1]["text"].startswith(f"Batch `{first}` is ready")
 
 
 def test_execute_before_prepare_is_refused(run):
