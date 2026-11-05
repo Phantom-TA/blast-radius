@@ -8,7 +8,7 @@ When a customer in #support says they were charged twice, follow these steps in 
    - description: Double charge on <order id>: find everyone affected, fix it, refund them
    - agent_names: [support, investigator, fixer, treasurer]
    - user_names: [{$creator}]
-   - bridge_id: the messaging app #support is on (list_bridges; on a local Switch server it is "Local Mattermost")
+   - bridge_id: the id of the messaging app #support is on (list_bridges; on a local Switch server it is the Mattermost one)
    - group_name: Blast Radius
    - instructions: the room brief at the end of these instructions, word for word
 3. Link it both ways with link_rooms: blast room → #support ("where the complaint came from"), blast room → #finance-approvals ("where refunds wait for a person"), #support → blast room and #finance-approvals → blast room ("the work on this complaint"). Post the new room's name in the customer's thread.

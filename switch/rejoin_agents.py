@@ -25,8 +25,8 @@ from agents.common.gateway import gateway_session  # noqa: E402
 from agents.common.switch_client import Credentials, SwitchAgent, find_server_url  # noqa: E402
 
 AGENTS = ["investigator", "treasurer", "customer-sim"]
-# Channels Mattermost made itself; the agents don't work there.
-SKIP_PREFIX = "Local Mattermost:"
+# Rooms Switch made for the chat app's own channels (Town Square, Off-Topic).
+AUTO_BRIDGED = "Auto-bridged from"
 
 
 def main() -> int:
@@ -38,7 +38,7 @@ def main() -> int:
     for name in AGENTS:
         agent_id = Credentials.load(name).agent_id
         rooms = [room for room in SwitchAgent(name).rooms()
-                 if not room["name"].startswith(SKIP_PREFIX)]
+                 if not (room.get("description") or "").startswith(AUTO_BRIDGED)]
         for room in rooms:
             if args.list:
                 print(f"Would rejoin {name} to #{room['name']}")
