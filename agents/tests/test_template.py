@@ -69,16 +69,33 @@ def test_apology_placeholders_match_the_ones_the_email_code_accepts():
     support = template()["resources"]["support"]["instructions"]
     placeholders = set(re.findall(r"\{(\w+)\}", support))
     assert {"name", "order_id", "amount"} <= placeholders
-    # Nothing else in braces but the one string param: an agent's fields can't use a bridge
+    # Nothing else in braces but the two string params: an agent's fields can't use a bridge
     # or room param (the server only resolves those for rooms), and anything else would be
     # filled in.
-    assert placeholders == {"name", "order_id", "amount", "support_lead"}
+    assert placeholders == {"name", "order_id", "amount", "support_lead", "finance_lead"}
 
 
 def test_every_param_an_agent_uses_is_declared():
     document = template()
-    assert document["params"]["support_lead"]["type"] == "string"
-    assert document["params"]["support_lead"]["required"] is True
+    for param in ("support_lead", "finance_lead"):
+        assert document["params"][param]["type"] == "string"
+        assert document["params"][param]["required"] is True
+
+
+def test_agents_name_people_by_param_not_by_creator():
+    # In an agent's instructions Switch fills {$creator} with the Switch account's name
+    # ("Admin"), which Discord doesn't know: Support could neither add nor ping the
+    # Finance lead. Rooms resolve {$creator} to the chat username, so they keep it.
+    resources = template()["resources"]
+    for key in ("support", "fixer"):
+        assert "{$creator}" not in resources[key]["instructions"]
+    assert resources["support_room"]["users"] == ["{$creator}"]
+
+
+def test_support_pastes_the_apology_where_people_can_read_it():
+    # Discord shows a room document only as "created room document …".
+    support = template()["resources"]["support"]["instructions"]
+    assert "paste the document's whole content as a quote" in support
 
 
 def test_support_and_fixer_are_open_so_the_support_lead_can_reach_them():
@@ -102,7 +119,7 @@ def test_the_support_lead_approves_the_work_and_the_finance_lead_the_money():
     resources = template()["resources"]
     support = resources["support"]["instructions"]
     assert "@{support_lead} to approve the wording" in support
-    assert "ask @{$creator} to mention the Treasurer" in support
+    assert "ask @{finance_lead} to mention the Treasurer" in support
     assert "ask @{support_lead} to approve the change" in resources["fixer"]["instructions"]
 
 

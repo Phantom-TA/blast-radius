@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+import yaml
 
 SWITCH_DIR = Path(__file__).resolve().parents[2] / "switch"
 
@@ -68,6 +69,62 @@ def test_owner_username_is_the_one_on_the_chosen_app():
 def test_owner_username_refuses_an_app_that_is_not_linked():
     with pytest.raises(SystemExit, match="isn't linked yet"):
         import_template.owner_username(context(("Mattermost", [])), "Mattermost")
+
+
+def test_the_import_fills_every_param_the_template_requires():
+    document = yaml.safe_load((SWITCH_DIR / "template.yaml").read_text(encoding="utf-8"))
+    required = {name for name, param in document["params"].items()
+                if param.get("required") and "default" not in param}
+    inputs = import_template.template_inputs(Path("/w"), "Discord", "strider5791", "phantom8817")
+    assert required <= set(inputs)
+    assert inputs["finance_lead"] == "strider5791"
+    assert inputs["support_lead"] == "phantom8817"
+
+
+def test_fill_people_puts_both_chat_usernames_in():
+    text = "@{finance_lead} prepares refunds; @{support_lead} approves the fix."
+    assert import_template.fill_people(text, "strider5791", "phantom8817") == (
+        "@strider5791 prepares refunds; @phantom8817 approves the fix."
+    )
+
+
+class GroupGateway:
+    """Answers /room-groups and /rooms separately, and records the changes."""
+
+    def __init__(self, groups, rooms):
+        self.groups, self.rooms, self.changes = groups, rooms, []
+
+    def __call__(self, method, path, body=None):
+        if method == "GET":
+            return self.groups if path == "/room-groups" else self.rooms
+        self.changes.append((method, path, body))
+        return {}
+
+
+def group(group_id, name="Blast Radius", room_count=0):
+    return {"id": group_id, "name": name, "room_count": room_count,
+            "created_at": "2026-11-05 06:46:33+00:00"}
+
+
+def test_leftover_groups_are_the_ones_with_no_live_room():
+    groups = [group("old"), group("live"), group("other", name="Payments")]
+    rooms = [{"group_id": "live"}, {"group_id": "old", "archived": True}]
+    assert [g["id"] for g in import_template.leftover_groups(groups, rooms)] == ["old"]
+
+
+def test_an_empty_leftover_group_is_deleted_and_one_with_archived_rooms_renamed():
+    gateway = GroupGateway([group("empty"), group("archived", room_count=5)], rooms=[])
+    import_template.clear_leftover_groups(gateway)
+    assert gateway.changes == [
+        ("DELETE", "/room-groups/empty", None),
+        ("PATCH", "/room-groups/archived", {"name": "Blast Radius (earlier, 2026-11-05)"}),
+    ]
+
+
+def test_a_group_in_use_is_left_alone():
+    gateway = GroupGateway([group("live", room_count=2)], rooms=[{"group_id": "live"}])
+    import_template.clear_leftover_groups(gateway)
+    assert gateway.changes == []
 
 
 def test_support_lead_is_added_to_the_two_rooms_only():

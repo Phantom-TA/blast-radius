@@ -11,8 +11,12 @@ Archiving keeps its history and documents (it can be unarchived); it just takes
 it out of the way. Runs as the agents' owner through the Gateway API.
 
 Archiving leaves the Discord channel in place, so reruns stack up channels with the
-same name. --delete removes the room and its channel, for a clean take. That can't be
-undone: the room's history and documents go too.
+same name. --delete removes the room and its channel too, but don't use it between
+takes: Switch Console (0.40.1) keeps a deleted room in the session list of every
+Claude Code agent that worked there, and Switch then refuses that whole list. On the
+next run the Fixer fixes the bug but can't post ("Not connected to a room"). An
+archived room keeps its agents as members, so archiving is safe. Deleting can't be
+undone either: the room's history and documents go too.
 """
 
 import argparse
@@ -24,6 +28,12 @@ sys.path.insert(0, str(ROOT))
 
 from agents.common.gateway import gateway_session  # noqa: E402
 from agents.common.switch_client import find_server_url  # noqa: E402
+
+DELETE_WARNING = (
+    "Warning: Claude Code agents that worked in a deleted room can't post in their next "
+    "room until Switch Console forgets their session there (see switch/SETUP.md, "
+    "\"If something goes wrong\"). Between takes, archive instead: make reset does it."
+)
 
 
 def clear_rooms(gateway, rooms: list[dict], delete: bool = False) -> None:
@@ -39,7 +49,8 @@ def main() -> int:
     parser.add_argument("prefix", nargs="?", default="blast-", help="room name prefix")
     parser.add_argument("--list", action="store_true", help="show the rooms, change nothing")
     parser.add_argument("--delete", action="store_true",
-                        help="delete the rooms and their chat channels, history included")
+                        help="delete the rooms and their chat channels, history included. "
+                             "Not between takes: it breaks the agents' next run")
     args = parser.parse_args()
 
     gateway = gateway_session(find_server_url(), quiet=True)
@@ -53,6 +64,8 @@ def main() -> int:
         print(f"{label} #{room['name']}")
     if not args.list:
         clear_rooms(gateway, rooms, delete=args.delete)
+    if args.delete:
+        print(DELETE_WARNING)
     return 0
 
 

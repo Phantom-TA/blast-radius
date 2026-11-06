@@ -91,7 +91,7 @@ This runs `switch/import_template.py`, which imports `switch/template.yaml` thro
 - **#support** (Support, Fixer, customer-sim and you) and **#finance-approvals** (Treasurer, Support and you), in a room group called **Blast Radius**, linked to each other;
 - a kickoff message. Support says hello in #support. It may take a minute to start.
 
-To do the same by hand in Console: open **Templates**, paste the contents of `switch/template.yaml`, set **Fixer's folder** to the full path of `demo-workspace/payments-service` in your clone, **Support lead's chat username** to your own username, and **Messaging app** to **Mattermost**.
+To do the same by hand in Console: open **Templates**, paste the contents of `switch/template.yaml`, set **Fixer's folder** to the full path of `demo-workspace/payments-service` in your clone, both **Support lead's chat username** and **Finance lead's chat username** to your own username on that app, and **Messaging app** to **Mattermost**.
 
 ## 7. Start the Python agents
 
@@ -170,12 +170,14 @@ Get the Support lead's Discord **username**, not their display name (it's under 
 python switch/import_template.py --support-lead <their username>
 ```
 
-When Discord is connected, this uses it instead of Mattermost. **#support** and **#finance-approvals** appear as channels, visible to everyone in the Discord server.
+When Discord is connected, this uses it instead of Mattermost. **#support** and **#finance-approvals** appear as channels, visible to everyone in the Discord server. The script tells Support and Fixer both people's Discord usernames: yours as the Finance lead (the account you linked in D2) and the Support lead's.
 
-If you already ran this project on Mattermost on this server, clear that first, because the agents and rooms already exist:
+If you already ran this project on this server (on Mattermost, or an earlier Discord setup), clear that first, because the agents and rooms already exist:
 
 1. In Console, delete the **support** and **fixer** agents.
-2. Run `python switch/archive_rooms.py support` and `python switch/archive_rooms.py finance-approvals`.
+2. Run `python switch/archive_rooms.py support`, `python switch/archive_rooms.py finance-approvals`, and `python switch/archive_rooms.py` (the last one archives the blast room the earlier run left).
+
+The import renames the earlier "Blast Radius" room group, so Support can file the new blast room under the new one.
 
 ### D4. Get ready
 
@@ -200,9 +202,9 @@ This is `make scenario` without the complaint, because a real person posts it. T
 | 1 | Support lead | #support | `Customer emailed: charged twice for order ORD-100953. @support can you check?` |
 | 2 | Support agent | #support | Replies, then creates a new channel, **#blast-ord-100953** (Discord lowercases channel names) |
 | 3 | Investigator | blast channel | Posts **313 customers, 312 who never complained, $21,607.00** |
-| 4 | Fixer | blast channel | Fixes the bug and posts the result |
-| 5 | Support lead | blast channel | `@support Fix approved.` |
-| 6 | Support agent | blast channel | Writes the room document **apology-email** and asks for approval |
+| 4 | Fixer | blast channel | Fixes the bug and posts the result: cause, fix, test name, pytest result |
+| 5 | Support lead | blast channel | Once the Fixer's result is there: `@support Fix approved.` |
+| 6 | Support agent | blast channel | Writes the room document **apology-email**, pastes its wording in the channel (Discord can't open room documents) and asks for approval |
 | 7 | Support lead | blast channel | `@support Wording approved.` |
 | 8 | Support agent | blast channel | Asks the Finance lead to prepare the refunds |
 | 9 | Finance lead | blast channel | `@treasurer prepare refunds` |
@@ -223,14 +225,15 @@ If the run was a good one, save it first:
 python switch/export_transcript.py
 ```
 
-Archiving leaves the Discord channel in place, so for a clean sidebar, delete the room and its channel before you reset. This can't be undone: the room's history and documents go too.
+Then:
 
 ```bash
-python switch/archive_rooms.py --delete
 make reset
 ```
 
 Type `!reset-all-agents` in #support, then run `make prepare`.
+
+`make reset` archives the blast room. Its Discord channel stays in the sidebar, so the next run adds a second `#blast-ord-100953`; that's expected. **Don't use `archive_rooms.py --delete` between takes**, even though it would clear the sidebar: Switch Console keeps the deleted room in the Fixer's session list, and on the next run the Fixer fixes the bug but can't post its result (see "If something goes wrong").
 
 If Claude Code's permission prompts interrupt a recording, turn on **Bypass permissions** for the **fixer** agent only, in Console. It only works in `demo-workspace/`.
 
@@ -240,6 +243,7 @@ If Claude Code's permission prompts interrupt a recording, turn on **Bypass perm
 - **Switch can't reach Mattermost after a restart, and the server log says `Mattermost post /users/login failed`.** Usually a second Mattermost is running, for example one started by hand on port 8065, and Switch's connection still holds that one's login. Use only Console's own Mattermost: stop the other one (`docker ps` shows it), then on **Home → Messaging apps** open the Mattermost row's **⋮** menu and choose **Disconnect app…**, and on **Admin** turn **Mattermost** off and on. Console makes a fresh connection; link your account again, then run `python switch/import_template.py` to recreate the rooms.
 - **The Treasurer refuses you, its owner.** Your chat account isn't linked to your Switch user. See step 2, or D2 on Discord.
 - **"Switch answered 500" when a room is created, or rooms don't show up in Mattermost.** Mattermost isn't running, usually because Docker Desktop stopped. Start Docker, then check that **Also run Mattermost** is on, on the server's page in Console.
+- **The Fixer commits a fix but never posts it; its line says "✗ 8 failed" or similar.** Switch Console's log (`~/Library/Application Support/switchdash/logs/switch-console.log` on a Mac) says `Switch did not take this agent's session placements … is not a member of room …`, and the server answers the Fixer `Not connected to a room. Call connect_to_room first.` A room the Fixer worked in was deleted (`archive_rooms.py --delete`), and Console still lists it among the Fixer's sessions. To recover, give the Fixer a fresh start: in Console delete the **support** and **fixer** agents, then follow D3 again. Between takes, use `make reset`, which archives instead.
 - **An agent says "Starting a session to handle this — one moment." and nothing follows.** Look in Switch Console: Claude Code may be waiting for you to allow an action.
 - **"You're not permitted to direct messages to me in this room"** from the Treasurer. That's correct whenever an agent asks it for something. Only its owner can.
 - **"I only take instructions from my owner, and this chat account isn't linked"** from the Treasurer. That's correct for the Support lead. For the Finance lead, link your Discord account.
@@ -272,6 +276,9 @@ We checked every API path, field and template setting against Switch's documenta
 | Reading room documents from Python may be hard | It works: `connect_to_room` lists the room's documents, and `load_internal_documents` returns their text | The Treasurer reads "apology-email" from the room. `agents/treasurer/apology_template.md` is used only if that document is missing |
 | A Discord user can be targeted like anyone else | `send_targeted_message` refuses a name that isn't a room participant, and Discord lets people post in a public channel without being one | `send` falls back to naming them in a plain post |
 | Markdown works everywhere | Discord shows Markdown tables as raw pipe characters | The Investigator posts a list |
-| Archiving a room clears the way | On Discord the channel stays, and a new room makes a second channel with the same name | `archive_rooms.py --delete` removes the room and its channel |
+| Archiving a room clears the way | On Discord the channel stays, and a new room makes a second channel with the same name | `archive_rooms.py --delete` removes the room and its channel, but see the next row |
+| Deleting a room is a clean way to rerun | Switch Console 0.40.1 keeps a deleted room in the session list of each Claude Code agent that worked there. Switch then refuses that agent's whole list, so it can't read or post in any room ("Not connected to a room") | Reruns archive (`make reset`); `--delete` warns. An archived room keeps its agents as members, so nothing breaks |
+| `{$creator}` is the person's chat username | In a room's `users` it is. In an agent's instructions Switch fills it with the Switch account's name ("Admin" on a Console server), which Discord doesn't know | The template has a `finance_lead` param, like `support_lead`; `import_template.py` fills it with your username on the chosen app |
+| People can read room documents in chat | Discord only shows "created room document …"; it can't open it | Support pastes the apology's wording when it asks for approval |
 
 The switch-docs MCP server wasn't connected when we built this, so we read the same documentation from the Switch repository, plus the server's own `get_template_guide` operation and its source.

@@ -23,6 +23,15 @@ params:
       The username, on the messaging app below, of the person who approves the
       code fix and the apology. If you're running this alone, use your own.
     required: true
+  # Not {$creator}: in an agent's instructions Switch fills that with your Switch
+  # account's name ("Admin"), which no chat app knows. Rooms resolve it correctly.
+  finance_lead:
+    type: string
+    label: Finance lead's chat username
+    description: >-
+      Your own username on the messaging app below. You own the Treasurer, so you
+      are the Finance lead, the only person who can move money.
+    required: true
   bridge:
     type: bridge
     label: Messaging app
