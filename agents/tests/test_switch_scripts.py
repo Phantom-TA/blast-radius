@@ -229,3 +229,9 @@ def test_template_import_waits_longer_than_a_normal_gateway_call():
     # Creating the agents and rooms took about 80 seconds on a slow computer;
     # a 30 second wait gave up while the server was still working.
     assert import_template.TEMPLATE_TIMEOUT >= 300
+
+
+def test_render_keeps_a_message_that_has_no_text():
+    message = {"sender_name": "user", "body": None, "timestamp": 1793965880869}
+    text = export_transcript.render([("support", [message])])
+    assert "**user**" in text and "(no text)" in text

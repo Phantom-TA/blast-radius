@@ -62,7 +62,8 @@ def render(transcripts: list[tuple[str, list[dict]]]) -> str:
         for message in messages:
             sent = as_time(message["timestamp"]).strftime("%Y-%m-%d %H:%M:%S UTC")
             sections.append(f"**{message['sender_name']}** ({sent})\n")
-            sections.append(f"{message['body'].strip()}\n")
+            body = (message.get("body") or "").strip() or "(no text)"
+            sections.append(f"{body}\n")
     return "\n".join(sections)
 
 
