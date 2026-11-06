@@ -113,7 +113,7 @@ This resets the database to the seed, recreates the Fixer's folder with the bugg
 
 You are both the Support lead and the Finance lead here:
 
-1. Watch #support. Support answers the customer and creates **#blast-ORD-100953**, with you, the Investigator, the Fixer and the Treasurer in it.
+1. Watch #support. In Mattermost, the agents' replies often sit inside threads: open the **N replies** link under a message, or the **Threads** view, to read them. Support answers the customer and creates **#blast-ORD-100953**, with you, the Investigator, the Fixer and the Treasurer in it.
 2. The Investigator posts the numbers: **313 customers, 312 who never complained, $21,607.00**.
 3. The Fixer posts its fix and test result. Reply: `@support Fix approved.`
 4. Support writes the apology as the room document **apology-email** and asks you to approve it. Read it, then reply: `@support Wording approved.`
