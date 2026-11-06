@@ -20,7 +20,7 @@ Either way, Switch runs on one computer. On a local server only one person can s
 | Python | 3.11 |
 | macOS | 26.5.1 |
 
-**Use Switch Console 0.40.1.** Switch's agent connection changes between releases, and our two Python agents speak the version this server runs. Download it from [the Switch releases page](https://github.com/sandbox-quantum/switch/releases) (`arm64` for Apple silicon, `x64` for Intel).
+**Use Switch Console 0.40.1.** Switch's agent connection changes between releases, and our two Python agents speak the version this server runs. Download it from [the Switch releases page](https://github.com/sandbox-quantum/switch/releases) (`arm64` for Apple silicon, `x64` for Intel). On Windows download `switch-console-x64.exe`; if SmartScreen warns, choose **More info**, then **Run anyway**. Make sure you pick version 0.40.1 (the release named `switch-console-v0.40.1`).
 
 ## 1. Install the tools
 
