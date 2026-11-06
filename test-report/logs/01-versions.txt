@@ -1,0 +1,53 @@
+commit: cf1915e
+branch: feat/discord-demo
+date: Fri Nov  6 10:09:24 IST 2026
+
+--- Python
+Python 3.11.16
+
+--- Claude Code
+2.1.318 (Claude Code)
+
+--- Docker
+Engine 29.9.2 / Client 29.9.2
+Docker Compose version v5.6.1
+
+--- macOS
+ProductName:		macOS
+ProductVersion:		26.5.1
+BuildVersion:		25F80
+
+--- Hardware
+Apple M4
+RAM bytes: 17179869184
+RAM GB: 16
+
+--- Disk free
+/dev/disk3s1s1   228Gi    12Gi   3.2Gi    79%    459k   34M    1%   /
+
+--- Switch Console
+/Applications/Switch Console.app
+0.40.1
+
+--- Running processes
+15918 /Applications/Switch Console.app/Contents/MacOS/Switch Console /Applications/Switch Console.app/Contents/Resources/dist-sidecar/shared-host.mjs 
+22627 /Applications/Switch Console.app/Contents/MacOS/Switch Console
+22699 /Applications/Switch Console.app/Contents/Frameworks/Switch Console Helper.app/Contents/MacOS/Switch Console Helper --type=gpu-process --user-da
+22700 /Applications/Switch Console.app/Contents/Frameworks/Switch Console Helper.app/Contents/MacOS/Switch Console Helper --type=utility --utility-sub
+22715 /Applications/Switch Console.app/Contents/Frameworks/Switch Console Helper (Renderer).app/Contents/MacOS/Switch Console Helper (Renderer) --type
+25686 /Applications/Switch Console.app/Contents/MacOS/Switch Console /Applications/Switch Console.app/Contents/Resources/dist-sidecar/agent-controller
+63506 /bin/zsh -c source /Users/amiyasingh/.claude/shell-snapshots/snapshot-zsh-1793939899108-m0pbzt.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB
+echo "commit: $(git rev-parse --short HEAD)"; echo "branch: $(git branch --show-current)"; echo "date: $(date)"
+echo; echo "--- Python"; python --version
+echo; echo "--- Claude Code"; claude --version 2>&1
+echo; echo "--- Docker"; docker version --format '"'"'Engine {{.Server.Version}} / Client {{.Client.Version}}'"'"' 2>&1; docker compose version 2>&1
+echo; echo "--- macOS"; sw_vers
+echo; echo "--- Hardware"; sysctl -n machdep.cpu.brand_string; echo "RAM bytes: $(sysctl -n hw.memsize)"; echo "RAM GB: $(( $(sysctl -n hw.memsize) / 
+echo; echo "--- Disk free"; df -h / | tail -1
+echo; echo "--- Switch Console"; ls -d /Applications/*witch* 2>&1; for app in /Applications/*witch*.app; do defaults read "$app/Contents/Info.plist" C
+} > test-report/logs/01-versions.txt 2>&1; cat test-report/logs/01-versions.txt' < /dev/null && pwd -P >| /tmp/claude-7287-cwd
+86751 /Applications/Switch Console.app/Contents/MacOS/Switch Console /Applications/Switch Console.app/Contents/Resources/dist-sidecar/shared-host.mjs 
+92390 /Applications/Switch Console.app/Contents/MacOS/Switch Console /Applications/Switch Console.app/Contents/Resources/dist-sidecar/shared-host.mjs 
+92452 /Applications/Switch Console.app/Contents/MacOS/Switch Console /Applications/Switch Console.app/Contents/Resources/dist-sidecar/shared-host.mjs 
+43393 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop --reason=open-tray --analytics-enabled=true --disable-h
+43410 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper.app/Contents/MacOS/Docker Desktop Helper --

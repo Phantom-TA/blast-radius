@@ -1,0 +1,26 @@
+server: http://localhost:63238
+
+-- bridges
+{'display_name': 'Mattermost', 'type': 'mattermost', 'status': 'active', 'connected': None}
+
+-- rooms
+room keys: ['admin_mode', 'agent_count', 'archived', 'bridge_display_name', 'bridge_id', 'bridge_type', 'channel_type', 'connected_user_count', 'connected_user_names', 'created_at', 'description', 'external_channel_url', 'group_id', 'group_name', 'id', 'name', 'owner_id', 'owner_name', 'read_visibility', 'write_visibility']
+{'name': 'blast-ORD-100953', 'archived': False, 'id': 'bf737bfd-9870-4928-b3d1-290510f22ceb'}
+{'name': 'support', 'archived': False, 'id': '4a8a2b6a-059d-4deb-b73a-0e20d5502a3f'}
+{'name': 'Off-Topic', 'archived': False, 'id': '5acb53fe-1ee2-4a00-b9c4-eead7d67e242'}
+{'name': 'Welcome', 'archived': False, 'id': '3b98a268-dbd3-47a1-bac5-89e22808f363'}
+{'name': 'finance-approvals', 'archived': False, 'id': 'd7f08099-12a6-4568-956d-943094502cf6'}
+{'name': 'Capacidades y presentación inicial', 'archived': False, 'id': '5d9ecc30-a5a7-497d-974d-495a918b22c8'}
+{'name': 'Town Square', 'archived': False, 'id': '2027035d-20d9-4841-bcee-8554ab1cce7c'}
+
+-- agents
+{'name': 'buddy', 'id': '4f3d5b17-421e-4c07-aaf7-74f32bb15504', 'status': None, 'provider': None, 'owner': None}
+{'name': 'customer-sim', 'id': '825ac266-28d0-4b18-ab86-8f504f8b7fc9', 'status': None, 'provider': None, 'owner': None}
+{'name': 'fixer', 'id': '4fc4d73e-2f91-433e-a349-a5dc290a451d', 'status': None, 'provider': None, 'owner': None}
+{'name': 'investigator', 'id': '9c8daaca-de63-4716-9465-17d54ff1faa4', 'status': None, 'provider': None, 'owner': None}
+{'name': 'support', 'id': 'df64d0c7-b043-4c79-adbf-6dae79338509', 'status': None, 'provider': None, 'owner': None}
+{'name': 'switch-buddy-admin', 'id': 'd2161d7e-469c-48ec-aefa-2ad8f724195c', 'status': None, 'provider': None, 'owner': None}
+{'name': 'treasurer', 'id': '5c769fc4-cc00-483e-862e-f24b65f1f537', 'status': None, 'provider': None, 'owner': None}
+
+-- owner's messaging apps
+{'name': 'Mattermost', 'type': None, 'your_usernames': ['user']}

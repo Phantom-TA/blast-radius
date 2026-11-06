@@ -1,0 +1,59 @@
+$ make up   (10:11:00)
+python3 run.py up
+ Image blast-radius-payments Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 556B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 309B 0.0s done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.8-slim
+#3 DONE 2.3s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 72B done
+#4 DONE 0.0s
+
+#5 [1/5] FROM docker.io/library/python:3.12.8-slim@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#5 resolve docker.io/library/python:3.12.8-slim@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 0.0s done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 6.28kB 0.0s done
+#6 DONE 0.0s
+
+#7 [2/5] WORKDIR /app
+#7 CACHED
+
+#8 [3/5] COPY requirements.txt .
+#8 CACHED
+
+#9 [4/5] RUN pip install --no-cache-dir -r requirements.txt
+#9 CACHED
+
+#10 [5/5] COPY . payments_app/
+#10 DONE 0.1s
+
+#11 exporting to image
+#11 exporting layers 0.1s done
+#11 exporting manifest sha256:03e66ac4f15f9e5962a107aa6d2196c2024f29c8abf8293164b12ad717237c78 done
+#11 exporting config sha256:1d62b75ac88912d0dbc254e3cc6fb7a3b957bb0c32b5e29785f1b82b192bab27 done
+#11 exporting attestation manifest sha256:eb97e21173f41dec3ac6930cf1f4a0a73b69ea26fd7fa64e4aba24655b09d7fe done
+#11 exporting manifest list sha256:9f78d12f9b12a246b5c58fd23379808dfe359d3b823c88987783aad4c4063cbe done
+#11 naming to docker.io/library/blast-radius-payments:latest 0.0s done
+#11 unpacking to docker.io/library/blast-radius-payments:latest
+#11 unpacking to docker.io/library/blast-radius-payments:latest 0.1s done
+#11 DONE 0.2s
+
+#12 resolving provenance for metadata file
+#12 DONE 0.0s
+ Image blast-radius-payments Built 
+ Container blast-radius-mailpit-1 Running 
+ Container blast-radius-payments-1 Recreate 
+ Container blast-radius-payments-1 Recreated 
+ Container blast-radius-payments-1 Starting 
+ Container blast-radius-payments-1 Started 
+Payment service: http://localhost:8400  Mailpit inbox: http://localhost:8025
+exit code: 0

@@ -1,0 +1,7 @@
+$ python switch/archive_rooms.py support   (12:30:20)
+Archiving #support
+exit code: 0
+
+$ python switch/archive_rooms.py finance-approvals
+Archiving #finance-approvals
+exit code: 0

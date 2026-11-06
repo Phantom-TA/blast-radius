@@ -1,0 +1,5 @@
+room support id e8234f2e-a88e-427a-9093-42274303db83 bridge Discord group Blast Radius users ['phantom8817', 'strider5791'] created 2026-11-06 07:00:32.547404+00:00
+room finance-approvals id 92d78229-aabf-4842-8121-c466e28353be bridge Discord group Blast Radius users ['phantom8817', 'strider5791'] created 2026-11-06 07:00:33.560887+00:00
+room blast-ORD-100953 id 4c8fdd05-94af-45c7-9493-97bf4dd159bf bridge Discord group None users ['phantom8817', 'strider5791'] created 2026-11-06 07:08:36.721667+00:00
+   doc apology-email created_at 2026-11-06 07:09:43.198986+00:00 updated_at None
+   doc postmortem created_at 2026-11-06 07:24:34.084727+00:00 updated_at None

@@ -1,0 +1,3 @@
+$ python switch/archive_rooms.py --delete --list   (13:00:19)
+Would delete #blast-ORD-100953
+exit code: 0

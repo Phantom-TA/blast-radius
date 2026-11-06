@@ -1,0 +1,23 @@
+$ Mailpit API  (11:40:35)
+total: 313  messages_count: 313
+unique recipients: 313
+distinct subjects: 313
+sample subjects: ["We've refunded an extra charge on your order ORD-102000", "We've refunded an extra charge on your order ORD-101998", "We've refunded an extra charge on your order ORD-101994"]
+first message id: 4tcUmV64Y2AWrhYHyJL91I
+
+--- the complainer's email (ORD-100953), as text:
+From: support@acme-store.example
+To: victor.tanaka2@example.com
+Subject: We've refunded an extra charge on your order ORD-100953
+
+Hi Victor Tanaka,
+
+We found that your order ORD-100953 was charged twice. We spotted this ourselves, and we're sorry. We have fixed the problem that caused it.
+
+We have already refunded the extra charge of $59.00 to your original payment method. It should show up within 5 to 10 business days.
+
+You don't need to do anything. If you have any questions, just reply to this email.
+
+Sorry again for the trouble,
+Acme Store Support
+

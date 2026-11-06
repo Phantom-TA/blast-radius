@@ -1,0 +1,9 @@
+$ python scripts/register_agents.py   (10:11:16)
+Signing in to http://localhost:63238 as admin@switch.local (Switch Console's local admin).
+investigator: already registered, skipping
+treasurer: already registered, skipping
+customer-sim: already registered, skipping
+investigator: addressing set to anyone
+treasurer: addressing set to owner_only
+customer-sim: addressing set to owner_only
+exit code: 0

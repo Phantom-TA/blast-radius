@@ -1,0 +1,47 @@
+===== #blast-ORD-100953 / apology-email
+meta: {"id": "bdfdb136-efec-4cb8-9bfb-e49582db0dfd", "owner_id": "f136ff55-e96e-4330-852e-c278757ca465", "owner_name": "Admin", "read_visibility": "private", "write_visibility": "private", "name": "apology-email", "description": "The apology every affected customer gets", "instructions": "The Treasurer sends this wording. First line is the subject.", "attached_rooms_count": 0, "packages": [], "scope": "room", "room_id": "1eb29290-ac51-49a3-938a-7254658840e5", "created_by_agent_id": "df64d0c7-b043-4c79-adbf-6dae79338509", "created_by_agent_name": "support", "created_at": "2026-11-06 06:05:21.029051+0
+----- content
+Subject: We've refunded an extra charge on your order {order_id}
+
+Hi {name},
+
+We found that your order {order_id} was charged twice. We spotted this ourselves, and we're sorry. We have fixed the problem that caused it.
+
+We have already refunded the extra charge of {amount} to your original payment method. It should show up within 5 to 10 business days.
+
+You don't need to do anything. If you have any questions, just reply to this email.
+
+Sorry again for the trouble,
+Acme Store Support
+
+===== #blast-ORD-100953 / postmortem
+meta: {"id": "6d934b56-628a-429f-a50c-9b5ba13ad0a9", "owner_id": "f136ff55-e96e-4330-852e-c278757ca465", "owner_name": "Admin", "read_visibility": "private", "write_visibility": "private", "name": "postmortem", "description": "What happened, who it hit, what we fixed and refunded", "instructions": "The record of this complaint, written from this room's history.", "attached_rooms_count": 0, "packages": [], "scope": "room", "room_id": "1eb29290-ac51-49a3-938a-7254658840e5", "created_by_agent_id": "df64d0c7-b043-4c79-adbf-6dae79338509", "created_by_agent_name": "support", "created_at": "2026-11-06 06:1
+----- content
+# Postmortem: double charge on ORD-100953
+
+## What happened
+Victor Tanaka reported in #support that order ORD-100953 (Backpack, $59.00) was charged twice. Cause, per the Fixer: the payment service retried a charge after a timeout without an idempotency key. A timeout can come after the money has already moved, so each retry charged again.
+
+## Who was affected
+Investigator (read-only check of the payments database): 313 customers were double charged, $21,607.00 USD in total. 1 complained; 312 had not said anything yet. The biggest overcharges were $149.00 (for example CUS-2143, ORD-100052).
+
+## The fix
+`charge_order` now sends the same key (`charge-order:<order_id>`) on every attempt, and the provider returns the original charge for a key it has already seen. Committed on fix/double-charge (968df2f). Regression test `test_timeout_then_retry_charges_the_order_once` fails on the old code with 2 charges; pytest: `14 passed, 1 warning in 0.51s`. Approved by user.
+
+## Refunds and emails
+Batch `rb-da973e02dfbf` (313 customers, $21,607.00) was prepared at user's request and approved by user in #finance-approvals. Treasurer: 313 refunds, $21,607.00 in total. It sent 313 apology emails worded from the room document "apology-email", whose wording user approved.
+
+## Timeline
+2026-11-06, UTC:
+- 06:02 Complaint posted in #support
+- 06:03 blast-ORD-100953 opened; Investigator and Fixer assigned
+- 06:04 Investigator reports 313 customers, $21,607.00 USD
+- 06:06 user approves the fix; Fixer posts its summary seconds later
+- 06:08 user approves the apology wording
+- 06:09 Batch rb-da973e02dfbf prepared, approved by user and refunded; 313 apology emails sent
+
+## Next steps
+- Merge fix/double-charge (968df2f) and deploy it; the room has no record of that yet.
+- Look into the 1 warning in the test run.
+- Watch for any new double charges after the deploy.
+

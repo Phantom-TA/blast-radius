@@ -1,0 +1,20 @@
+$ read-only probe after Amiya deleted support and fixer in Console   (12:30:04)
+server: http://localhost:63238
+
+-- rooms
+room keys: ['admin_mode', 'agent_count', 'archived', 'bridge_display_name', 'bridge_id', 'bridge_type', 'channel_type', 'connected_user_count', 'connected_user_names', 'created_at', 'description', 'external_channel_url', 'group_id', 'group_name', 'id', 'name', 'owner_id', 'owner_name', 'read_visibility', 'write_visibility']
+{'name': 'Welcome', 'archived': False, 'id': '3b98a268-dbd3-47a1-bac5-89e22808f363'}
+{'name': 'Capacidades y presentación inicial', 'archived': False, 'id': '5d9ecc30-a5a7-497d-974d-495a918b22c8'}
+{'name': 'Off-Topic', 'archived': False, 'id': '5acb53fe-1ee2-4a00-b9c4-eead7d67e242'}
+{'name': 'Town Square', 'archived': False, 'id': '2027035d-20d9-4841-bcee-8554ab1cce7c'}
+{'name': 'support', 'archived': False, 'id': '4a8a2b6a-059d-4deb-b73a-0e20d5502a3f'}
+{'name': 'finance-approvals', 'archived': False, 'id': 'd7f08099-12a6-4568-956d-943094502cf6'}
+{'name': 'New Chat', 'archived': False, 'id': '4afbae8a-277c-4ff0-a784-8ebd9c8f9754'}
+{'name': 'New Chat', 'archived': False, 'id': 'f5fb973e-5f59-4a22-9c2d-c3b4e37ea7dc'}
+
+-- agents
+{'name': 'buddy', 'id': '4f3d5b17-421e-4c07-aaf7-74f32bb15504', 'status': None, 'provider': None, 'owner': None}
+{'name': 'customer-sim', 'id': '825ac266-28d0-4b18-ab86-8f504f8b7fc9', 'status': None, 'provider': None, 'owner': None}
+{'name': 'investigator', 'id': '9c8daaca-de63-4716-9465-17d54ff1faa4', 'status': None, 'provider': None, 'owner': None}
+{'name': 'switch-buddy-admin', 'id': 'd2161d7e-469c-48ec-aefa-2ad8f724195c', 'status': None, 'provider': None, 'owner': None}
+{'name': 'treasurer', 'id': '5c769fc4-cc00-483e-862e-f24b65f1f537', 'status': None, 'provider': None, 'owner': None}

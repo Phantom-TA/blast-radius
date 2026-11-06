@@ -1,0 +1,7 @@
+$ make verify   (11:41:11)
+python3 run.py verify
+PASS  Bug fixed with a regression test: tests pass, retry creates 1 charge, regression test fails on the buggy code
+PASS  Refunds correct with no double refunds: 313 customers refunded, $21,607.00 total
+PASS  Apology emails delivered: 313 emails in Mailpit
+PASS  Postmortem room document: room document "postmortem" is in #blast-ORD-100953
+exit code: 0

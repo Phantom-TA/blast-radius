@@ -1,0 +1,27 @@
+$ laptop snapshot   (2026-11-06 14:20:02)
+--- memory pressure
+The system has 17179869184 (1048576 pages with a page size of 16384).
+System-wide memory free percentage: 35%
+--- swap
+vm.swapusage: total = 14336.00M  used = 13383.12M  free = 952.88M  (encrypted)
+--- top memory users (MB)
+Code Helper (Renderer)
+Code Helper (Renderer)
+python
+    229 MB  WhatsApp
+com.apple.WebKit.WebContent
+claude
+claude
+com.apple.Virtualization.VirtualMachine
+    124 MB  IntelliJ IDEA
+com.apple.WebKit.WebContent
+    120 MB  Brave Browser
+Electron
+--- docker containers
+blast-radius-payments-1	35.87MiB / 7.748GiB	0.35%
+blast-radius-mailpit-1	40.28MiB / 7.748GiB	0.00%
+switchdash-local-mattermost-mattermost-1	200.8MiB / 7.748GiB	1.01%
+--- load
+14:20  up 18 days, 16:02, 3 users, load averages: 3.07 3.40 3.72
+--- disk
+/dev/disk3s1s1   228Gi    12Gi    25Gi    33%    459k  258M    0%   /

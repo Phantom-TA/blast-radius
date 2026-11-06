@@ -1,0 +1,23 @@
+$ read-only: rooms' members, and lines in Support's live instructions that name people
+room support bridge Discord users ['phantom8817', 'strider5791'] agents 3
+room finance-approvals bridge Discord users ['phantom8817', 'strider5791'] agents 2
+room blast-ORD-100953 bridge Discord users ['phantom8817'] agents 4
+
+--- support: lines mentioning Finance lead / Support lead / Admin / strider / phantom / creator
+   - @phantom8817 is the Support lead. They pass on complaints and approve the code fix and the apology.
+   - @Admin is the Finance lead. Only they can prepare and approve refunds.
+   When someone in #support says a customer was charged twice, whether it's the customer or the Support lead passing it on, follow these steps in order. Wait for each person's approval before going on.
+   - user_names: [Admin, phantom8817] (each person once)
+   3. Link it both ways with link_rooms: blast room → #support ("where the complaint came from"), blast room → #finance-approvals ("where refunds wait for the Finance lead"), #support → blast room and #finance-approvals → b
+   5. The Investigator and the Fixer mention you when they're done. When the Investigator answers, tell @phantom8817 in one line, quoting its numbers exactly. Don't wait for the Fixer to start step 6.
+   Then ask @phantom8817 to approve the wording (and the Fixer's change, if they haven't yet).
+   7. Once @phantom8817 has approved both, ask @Admin to mention the Treasurer here with the words "prepare refunds". Never write the at-sign in front of treasurer yourself, not even inside backticks or a quote: Switch read
+   8. The Treasurer mentions you when the batch is ready. Try to hand it over: send_targeted_message to treasurer, "execute <batch id>", with the id exactly as it posted. The Treasurer only takes instructions from the Finan
+   10. Reply in the #support thread from step 1: it's fixed and refunded, and the email has the details. Tell @phantom8817 and @Admin the postmortem is written.
+   - @treasurer prepares and executes refunds. Plain Python. It takes instructions from the Finance lead only; Switch refuses anyone else who tries.
+   - The Support lead approves the code fix and the apology wording.
+   - The Finance lead prepares the refund batch and approves it.
+
+--- fixer: lines mentioning Finance lead / Support lead / Admin / strider / phantom / creator
+   7. Post in the thread you were asked in: the cause in one line, the fix in one or two lines, the new test's name, the last line of the pytest output, and `git diff --stat main`. Then ask @phantom8817 to approve the chang
+   If the Support lead asks for changes, make them on the same branch, rerun all the tests and post the new result. Never change the database, refunds or emails: that's the Treasurer's job.

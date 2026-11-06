@@ -1,0 +1,3 @@
+$ python switch/export_transcript.py   (13:00:26)
+/chats/e8234f2e-a88e-427a-9093-42274303db83/messages?limit=200 failed with 403: {"detail":{"code":"NOT_A_MEMBER","message":"You are not a member of this chat."}}
+exit code: 1

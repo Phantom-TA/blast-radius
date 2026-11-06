@@ -1,0 +1,21 @@
+$ git log --stat -1 fix/double-charge  (rerun, 14:22:03)
+commit 2068a816ef597acb06a05107b66a5c2adf159cf4
+Author: Payments Team <payments-team@acme-store.example>
+Date:   Fri Nov 6 14:21:33 2026 +0530
+
+    Charge each order once when a provider timeout is retried
+    
+    charge_order retried after a ProviderTimeout without an idempotency key.
+    The provider records the charge before the timeout loses its response, so
+    each retry created another charge on the same order (ORD-100953).
+    
+    Every attempt to charge an order now sends the same idempotency key
+    (charge:<order_id>), and the provider returns the original charge for a
+    repeat key. Adds a regression test that times out the first attempt,
+    retries, and asserts exactly one charge exists.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ service/charge_client.py            | 15 +++++++++++++--
+ service/tests/test_double_charge.py | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 2 deletions(-)

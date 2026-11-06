@@ -1,0 +1,8 @@
+$ make agents   (started 2026-11-06 10:11:34)
+python3 run.py agents
+Agents running. Press Ctrl+C to stop them.
+2026-11-06 10:11:34,584 switch: investigator: connected, covering 0 rooms
+2026-11-06 10:11:34,584 switch: treasurer: connected, covering 0 rooms
+2026-11-06 11:34:47,250 investigator: asked by support: @investigator Find every customer hit by the double charge.
+2026-11-06 11:39:03,870 treasurer: asked by user: prepare refunds
+2026-11-06 11:39:38,067 treasurer: asked by user: execute rb-da973e02dfbf

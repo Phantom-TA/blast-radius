@@ -1,0 +1,6 @@
+$ python switch/import_template.py --update   (10:11:25)
+Signing in to http://localhost:63238 as admin@switch.local (Switch Console's local admin).
+Switch accepts the template.
+support: instructions updated. Type !reset @support in a room it's in so a running session picks them up.
+fixer: instructions updated. Type !reset @fixer in a room it's in so a running session picks them up.
+exit code: 0

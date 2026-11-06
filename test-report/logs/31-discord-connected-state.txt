@@ -1,0 +1,10 @@
+$ read-only probe: bridges + owner's linked chat accounts   (12:22:21)
+server: http://localhost:63238
+
+-- bridges
+{'display_name': 'Mattermost', 'type': 'mattermost', 'status': 'active', 'connected': None}
+{'display_name': 'Discord', 'type': 'discord', 'status': 'active', 'connected': None}
+
+-- owner's messaging apps
+{'name': 'Mattermost', 'type': None, 'your_usernames': ['user']}
+{'name': 'Discord', 'type': None, 'your_usernames': ['strider5791']}

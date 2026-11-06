@@ -1,0 +1,13 @@
+===== #blast-ORD-100953 / apology-email
+meta: {"id": "eb22ced7-eae5-4aac-98a5-6a4049ee8afa", "owner_id": "f136ff55-e96e-4330-852e-c278757ca465", "owner_name": "Admin", "read_visibility": "private", "write_visibility": "private", "name": "apology-email", "description": "The apology every affected customer gets", "instructions": "The Treasurer sends this wording. First line is the subject.", "attached_rooms_count": 0, "packages": [], "scope": "room", "room_id": "4c8fdd05-94af-45c7-9493-97bf4dd159bf", "created_by_agent_id": "7ed9b3b3-a0f5-4a90-92d6-ca5513b1ddc3", "created_by_agent_name": "support", "created_at": "2026-11-06 07:09:43.198986+0
+----- content
+Subject: We've refunded an extra charge on your order {order_id}
+
+Hi {name},
+
+We found that your order {order_id} was charged twice. We caught this ourselves, fixed the problem behind it, and have already refunded the extra charge of {amount} to your original payment method. You should see it within 5 to 10 business days.
+
+We're sorry for the trouble. If you have any questions, just reply to this email.
+
+The Acme Store team
+

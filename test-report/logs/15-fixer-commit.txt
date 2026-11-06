@@ -1,0 +1,128 @@
+$ git log --stat fix/double-charge  (11:36:25)
+commit 968df2ff51a2b0edaf7853a7f52504cfeeea0d44
+Author: Payments Team <payments-team@acme-store.example>
+Date:   Fri Nov 6 11:36:10 2026 +0530
+
+    Send an idempotency key on every charge attempt to stop double charges
+    
+    A provider timeout does not mean the charge failed: the money can move and
+    only the response is lost. charge_order retried without an idempotency key,
+    so each retry after a timeout created a second charge (e.g. ORD-100953).
+    
+    charge_order now derives one key per order and sends it on every attempt;
+    the provider already answers a repeat key with the original charge.
+    
+    Adds a regression test (timeout then retry -> exactly one charge) and a
+    test that every attempt sends the same key.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ service/charge_client.py            | 16 ++++++++++++++--
+ service/tests/test_charge_client.py | 12 ++++++++++++
+ service/tests/test_double_charge.py | 37 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 63 insertions(+), 2 deletions(-)
+
+$ git diff baseline..fix/double-charge
+diff --git a/service/charge_client.py b/service/charge_client.py
+index 79d402a..022c03f 100644
+--- a/service/charge_client.py
++++ b/service/charge_client.py
+@@ -9,11 +9,23 @@ class ChargeFailed(Exception):
+     """The provider never answered, even after retrying."""
+ 
+ 
++def idempotency_key_for(order_id: str) -> str:
++    """The key every attempt to charge this order sends, so the provider charges it at most once."""
++    return f"charge-order:{order_id}"
++
++
+ def charge_order(provider, order_id: str, amount_cents: int) -> int:
+-    """Charge an order, retrying when the provider times out. Returns the charge id."""
++    """Charge an order, retrying when the provider times out. Returns the charge id.
++
++    A timeout does not mean the charge failed: the provider may have taken the
++    money and only lost the response. Every attempt therefore sends the same
++    idempotency key, and the provider answers a repeat key with the original
++    charge instead of charging again.
++    """
++    idempotency_key = idempotency_key_for(order_id)
+     for _ in range(MAX_ATTEMPTS):
+         try:
+-            return provider.charge(order_id, amount_cents)
++            return provider.charge(order_id, amount_cents, idempotency_key=idempotency_key)
+         except ProviderTimeout:
+             continue
+     raise ChargeFailed(f"order {order_id}: no response after {MAX_ATTEMPTS} attempts")
+diff --git a/service/tests/test_charge_client.py b/service/tests/test_charge_client.py
+index d978b92..342c69a 100644
+--- a/service/tests/test_charge_client.py
++++ b/service/tests/test_charge_client.py
+@@ -10,9 +10,11 @@ class ScriptedProvider:
+     def __init__(self, timeouts):
+         self.timeouts = timeouts
+         self.calls = 0
++        self.keys = []
+ 
+     def charge(self, order_id, amount_cents, idempotency_key=None):
+         self.calls += 1
++        self.keys.append(idempotency_key)
+         if self.calls <= self.timeouts:
+             raise ProviderTimeout(order_id)
+         return 42
+@@ -35,3 +37,13 @@ def test_gives_up_after_max_attempts():
+     with pytest.raises(ChargeFailed):
+         charge_order(provider, "ORD-1", 4900)
+     assert provider.calls == MAX_ATTEMPTS
++
++
++def test_every_attempt_sends_the_same_idempotency_key():
++    provider = ScriptedProvider(timeouts=MAX_ATTEMPTS - 1)
++
++    charge_order(provider, "ORD-1", 4900)
++
++    assert len(provider.keys) == MAX_ATTEMPTS
++    assert provider.keys[0] is not None
++    assert set(provider.keys) == {provider.keys[0]}
+diff --git a/service/tests/test_double_charge.py b/service/tests/test_double_charge.py
+new file mode 100644
+index 0000000..9264b84
+--- /dev/null
++++ b/service/tests/test_double_charge.py
+@@ -0,0 +1,37 @@
++"""Regression test: a provider timeout followed by a retry must not charge twice (ORD-100953)."""
++
++import pytest
++
++from ..charge_client import charge_order
++from ..provider import FakeProvider
++from ..store import connect, create_db
++
++
++@pytest.fixture
++def conn(tmp_path):
++    db_path = str(tmp_path / "payments.db")
++    create_db(db_path)
++    conn = connect(db_path)
++    conn.execute("INSERT INTO customers VALUES ('CUS-1', 'Ana Silva', 'ana@example.com')")
++    conn.execute(
++        "INSERT INTO orders VALUES ('ORD-1', 'CUS-1', 'Desk lamp', 4900, '2026-10-01T10:00:00+00:00')"
++    )
++    yield conn
++    conn.close()
++
++
++def test_timeout_then_retry_charges_the_order_once(conn):
++    calls = []
++
++    def time_out_first_attempt(order_id):
++        # The charge goes through on the first attempt, but its response is lost.
++        calls.append(order_id)
++        return len(calls) == 1
++
++    provider = FakeProvider(conn, should_timeout=time_out_first_attempt)
++
++    charge_id = charge_order(provider, "ORD-1", 4900)
++
++    charges = conn.execute("SELECT id FROM charges WHERE order_id = 'ORD-1'").fetchall()
++    assert calls, "the first attempt should have timed out"
++    assert [row["id"] for row in charges] == [charge_id]

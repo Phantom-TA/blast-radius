@@ -1,0 +1,25 @@
+13:32:20 monitor started
+13:32:20 STATE rooms: ["finance-approvals[live on Discord]", "support[live on Discord]"]
+13:32:20 STATE documents: []
+13:32:20 STATE git: {"branches": ["main"], "current": "main", "log": "e407179 Payment service"}
+13:32:20 STATE batches: []
+13:32:20 STATE refunds: [0, null, null]
+13:32:20 STATE mailpit_total: 0
+14:20:02 monitor started
+14:20:02 STATE rooms: ["blast-ORD-100953[live on Discord]", "finance-approvals[live on Discord]", "support[live on Discord]"]
+14:20:02 STATE documents: []
+14:20:02 STATE git: {"branches": ["main"], "current": "main", "log": "e407179 Payment service"}
+14:20:02 STATE batches: []
+14:20:02 STATE refunds: [0, null, null]
+14:20:02 STATE mailpit_total: 0
+14:20:42 AGENT 2026-11-06 14:20:36,586 investigator: asked by support: @investigator Find every customer hit by the double charge.
+14:20:52 STATE git: {"branches": ["fix/double-charge", "main"], "current": "fix/double-charge", "log": "e407179 Payment service"}
+14:21:03 CORE 2026-11-06T14:21:00 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/read_context → 400: Not connected to a room. Call connect_to_room first.
+14:21:03 CORE 2026-11-06T14:21:01 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/post_message → 400: Not connected to a room. Call connect_to_room first.
+14:21:13 CORE 2026-11-06T14:21:07 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/post_message → 400: Not connected to a room. Call connect_to_room first.
+14:21:13 CORE 2026-11-06T14:21:08 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/read_context → 400: Not connected to a room. Call connect_to_room first.
+14:21:23 STATE documents: ["blast-ORD-100953/apology-email"]
+14:21:43 STATE git: {"branches": ["fix/double-charge", "main"], "current": "fix/double-charge", "log": "2068a81 Charge each order once when a provider timeout is retried\ne407179 Payment service"}
+14:21:43 CORE 2026-11-06T14:21:38 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/send_targeted_message → 400: Not connected to a room. Call connect_to_room first.
+14:21:53 CORE 2026-11-06T14:21:44 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/send_targeted_message → 400: Not connected to a room. Call connect_to_room first.
+14:21:53 CORE 2026-11-06T14:21:51 POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/send_targeted_message → 400: Not connected to a room. Call connect_to_room first.

@@ -1,0 +1,6 @@
+# Deviation from SETUP.md, agreed by Amiya: archive the live Mattermost blast room before the Discord run
+$ python switch/archive_rooms.py --list   (11:57:15)
+Would archive #blast-ORD-100953
+$ python switch/archive_rooms.py
+Archiving #blast-ORD-100953
+exit code: 0

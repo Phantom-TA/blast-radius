@@ -1,0 +1,33 @@
+$ git fetch origin && git checkout feat/discord-demo && git pull
+cf1915e 2026-11-05 20:48:13 +0530 Fix the Mattermost connection name and mark the old handoff as history
+cf1915e
+
+$ pip install -r payments_app/requirements.txt -r agents/requirements.txt
+Requirement already satisfied: fastapi==0.162.0 in ./.venv/lib/python3.11/site-packages (from -r payments_app/requirements.txt (line 1)) (0.162.0)
+Requirement already satisfied: uvicorn==0.54.0 in ./.venv/lib/python3.11/site-packages (from -r payments_app/requirements.txt (line 2)) (0.54.0)
+Requirement already satisfied: pytest==9.2.0 in ./.venv/lib/python3.11/site-packages (from -r payments_app/requirements.txt (line 3)) (9.2.0)
+Requirement already satisfied: httpx==0.28.1 in ./.venv/lib/python3.11/site-packages (from -r payments_app/requirements.txt (line 4)) (0.28.1)
+Requirement already satisfied: aiosmtpd==1.4.6 in ./.venv/lib/python3.11/site-packages (from -r payments_app/requirements.txt (line 5)) (1.4.6)
+Requirement already satisfied: websockets<16,>=14 in ./.venv/lib/python3.11/site-packages (from -r agents/requirements.txt (line 1)) (15.0.1)
+Requirement already satisfied: pyyaml>=6 in ./.venv/lib/python3.11/site-packages (from -r agents/requirements.txt (line 3)) (6.0.3)
+Requirement already satisfied: starlette>=0.46.0 in ./.venv/lib/python3.11/site-packages (from fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (1.10.0)
+Requirement already satisfied: pydantic>=2.9.0 in ./.venv/lib/python3.11/site-packages (from fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (2.14.2)
+Requirement already satisfied: typing-extensions>=4.8.0 in ./.venv/lib/python3.11/site-packages (from fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (4.16.0)
+Requirement already satisfied: typing-inspection>=0.4.2 in ./.venv/lib/python3.11/site-packages (from fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (0.4.5)
+Requirement already satisfied: annotated-doc>=0.0.2 in ./.venv/lib/python3.11/site-packages (from fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (0.0.5)
+Requirement already satisfied: opentelemetry-api>=1.44.0 in ./.venv/lib/python3.11/site-packages (from fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (1.45.2)
+Requirement already satisfied: click>=7.0 in ./.venv/lib/python3.11/site-packages (from uvicorn==0.54.0->-r payments_app/requirements.txt (line 2)) (8.5.0)
+Requirement already satisfied: h11>=0.8 in ./.venv/lib/python3.11/site-packages (from uvicorn==0.54.0->-r payments_app/requirements.txt (line 2)) (0.16.0)
+Requirement already satisfied: iniconfig>=2 in ./.venv/lib/python3.11/site-packages (from pytest==9.2.0->-r payments_app/requirements.txt (line 3)) (2.3.1)
+Requirement already satisfied: packaging>=24 in ./.venv/lib/python3.11/site-packages (from pytest==9.2.0->-r payments_app/requirements.txt (line 3)) (26.3)
+Requirement already satisfied: pluggy<2,>=1.6 in ./.venv/lib/python3.11/site-packages (from pytest==9.2.0->-r payments_app/requirements.txt (line 3)) (1.7.0)
+Requirement already satisfied: pygments>=2.15 in ./.venv/lib/python3.11/site-packages (from pytest==9.2.0->-r payments_app/requirements.txt (line 3)) (2.21.0)
+Requirement already satisfied: anyio in ./.venv/lib/python3.11/site-packages (from httpx==0.28.1->-r payments_app/requirements.txt (line 4)) (4.16.0)
+Requirement already satisfied: certifi in ./.venv/lib/python3.11/site-packages (from httpx==0.28.1->-r payments_app/requirements.txt (line 4)) (2026.10.23)
+Requirement already satisfied: httpcore==1.* in ./.venv/lib/python3.11/site-packages (from httpx==0.28.1->-r payments_app/requirements.txt (line 4)) (1.0.9)
+Requirement already satisfied: idna in ./.venv/lib/python3.11/site-packages (from httpx==0.28.1->-r payments_app/requirements.txt (line 4)) (3.20)
+Requirement already satisfied: atpublic in ./.venv/lib/python3.11/site-packages (from aiosmtpd==1.4.6->-r payments_app/requirements.txt (line 5)) (9.0.0)
+Requirement already satisfied: attrs in ./.venv/lib/python3.11/site-packages (from aiosmtpd==1.4.6->-r payments_app/requirements.txt (line 5)) (26.1.0)
+Requirement already satisfied: annotated-types>=0.6.0 in ./.venv/lib/python3.11/site-packages (from pydantic>=2.9.0->fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (0.8.0)
+Requirement already satisfied: pydantic-core==2.50.2 in ./.venv/lib/python3.11/site-packages (from pydantic>=2.9.0->fastapi==0.162.0->-r payments_app/requirements.txt (line 1)) (2.50.2)
+exit code: 0

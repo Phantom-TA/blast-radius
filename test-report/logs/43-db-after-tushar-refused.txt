@@ -1,0 +1,11 @@
+$ sqlite3 (read-only) -- AFTER Tushar's refused execute attempt (12:55:24)   (12:59:12)
+id               status    approved_by  executed_at              
+---------------  --------  -----------  -------------------------
+rb-da973e02dfbf  executed  strider5791  2026-11-06T07:24:03+00:00
+refunds  refunded  emailed  customers  total      last_refunded_at         
+-------  --------  -------  ---------  ---------  -------------------------
+313      313       313      313        $21607.00  2026-11-06T07:24:03+00:00
+charges_refunded_twice
+----------------------
+0                     
+Mailpit total: 313

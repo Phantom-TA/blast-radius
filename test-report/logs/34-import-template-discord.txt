@@ -1,0 +1,7 @@
+$ python switch/import_template.py --support-lead phantom8817   (12:30:27)
+Signing in to http://localhost:63238 as admin@switch.local (Switch Console's local admin).
+Switch accepts the template.
+Created the support and fixer agents, #support and #finance-approvals on Discord. Support's kickoff is in #support.
+Added phantom8817 to #support.
+Added phantom8817 to #finance-approvals.
+exit code: 0

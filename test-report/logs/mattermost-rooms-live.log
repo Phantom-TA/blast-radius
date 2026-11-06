@@ -1,0 +1,5 @@
+=== watcher started 2026-11-06 11:33:23, showing messages sent after 2026-11-06T05:55
+--- ROOM #support on Mattermost (created 2026-11-05 06:46:33.070161+00:00, channel channel_public, read public, users ['switch-admin', 'user'])
+!!! watcher: /chats/4a8a2b6a-059d-4deb-b73a-0e20d5502a3f/messages?limit=100 failed with 403: {"detail":{"code":"NOT_A_MEMBER","message":"You are not a member of this chat."}}
+!!! watcher: /chats/4a8a2b6a-059d-4deb-b73a-0e20d5502a3f/messages?limit=100 failed with 403: {"detail":{"code":"NOT_A_MEMBER","message":"You are not a member of this chat."}}
+!!! watcher: /chats/4a8a2b6a-059d-4deb-b73a-0e20d5502a3f/messages?limit=100 failed with 403: {"detail":{"code":"NOT_A_MEMBER","message":"You are not a member of this chat."}}

@@ -1,0 +1,4 @@
+$ python switch/import_template.py --check
+Signing in to http://localhost:63238 as admin@switch.local (Switch Console's local admin).
+Switch accepts the template.
+exit code: 0

@@ -1,0 +1,12 @@
+2026-11-06T14:19:48 ERROR [switch_core.bridges.agent.app] POST /agents/7ed9b3b3-a0f5-4a90-92d6-ca5513b1ddc3/ops/create_room → 400: Multiple room groups named 'Blast Radius'; ask the user which one to use
+2026-11-06T14:20:00 WARNI [switch_core.bridges.collaboration.collaboration_core] No external user found for username 'Admin' on bridge 0ccc4a53-50ef-4824-a0ad-ec046f93d257
+2026-11-06T14:20:01 WARNI [switch_core.bridges.collaboration.collaboration_core] No external user found for username 'Admin' on bridge 0ccc4a53-50ef-4824-a0ad-ec046f93d257
+2026-11-06T14:20:02 WARNI [switch_core.room_service] Room a97144ab-990b-4bd8-8064-e03c69cf7cf2 created with 1 attachment failure(s): [{'kind': 'user', 'id': 'Admin', 'error': 'no account with this name is known on the bridge'}]
+2026-11-06T14:20:02 WARNI [switch_core.observability.pool] A database connection was held for 2.09 s by switch_core.agent_runs:_one_at_a_time (0 more long holds by it in the last 60 s). Stack: switch_core.agent_runs:_one_at_a_time
+2026-11-06T14:21:00 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/read_context → 400: Not connected to a room. Call connect_to_room first.
+2026-11-06T14:21:01 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/post_message → 400: Not connected to a room. Call connect_to_room first.
+2026-11-06T14:21:07 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/post_message → 400: Not connected to a room. Call connect_to_room first.
+2026-11-06T14:21:08 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/read_context → 400: Not connected to a room. Call connect_to_room first.
+2026-11-06T14:21:38 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/send_targeted_message → 400: Not connected to a room. Call connect_to_room first.
+2026-11-06T14:21:44 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/send_targeted_message → 400: Not connected to a room. Call connect_to_room first.
+2026-11-06T14:21:51 ERROR [switch_core.bridges.agent.app] POST /agents/05c49a48-3f53-4e58-8a58-249610812cfe/ops/send_targeted_message → 400: Not connected to a room. Call connect_to_room first.

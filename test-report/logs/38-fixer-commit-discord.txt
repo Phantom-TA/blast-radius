@@ -1,0 +1,96 @@
+$ git log --stat fix/double-charge  (12:40:00)
+commit 3a4471c877d30741efb7748cc9fc2e0eb201e0d3
+Author: Payments Team <payments-team@acme-store.example>
+Date:   Fri Nov 6 12:39:49 2026 +0530
+
+    Fix double charge when a provider timeout is retried
+    
+    charge_order retried after ProviderTimeout without an idempotency key, but
+    a timeout can lose the response after the charge already went through, so
+    the retry created a second charge for the same order (e.g. ORD-100953).
+    
+    Every attempt to charge an order now sends the same idempotency key
+    ("charge:<order_id>"), so the provider returns the original charge on a
+    repeat instead of charging again.
+    
+    Adds test_timeout_then_retry_charges_once as a regression test.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ service/charge_client.py            | 14 ++++++++++++--
+ service/tests/test_double_charge.py | 38 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 2 deletions(-)
+
+$ git diff baseline..fix/double-charge
+diff --git a/service/charge_client.py b/service/charge_client.py
+index 79d402a..0996fbb 100644
+--- a/service/charge_client.py
++++ b/service/charge_client.py
+@@ -9,11 +9,21 @@ class ChargeFailed(Exception):
+     """The provider never answered, even after retrying."""
+ 
+ 
++def idempotency_key_for(order_id: str) -> str:
++    """The key every attempt to charge this order sends, so the provider charges it once."""
++    return f"charge:{order_id}"
++
++
+ def charge_order(provider, order_id: str, amount_cents: int) -> int:
+-    """Charge an order, retrying when the provider times out. Returns the charge id."""
++    """Charge an order, retrying when the provider times out. Returns the charge id.
++
++    A timeout can lose the response after the charge already went through, so every
++    attempt sends the same idempotency key and a retry returns the original charge.
++    """
++    key = idempotency_key_for(order_id)
+     for _ in range(MAX_ATTEMPTS):
+         try:
+-            return provider.charge(order_id, amount_cents)
++            return provider.charge(order_id, amount_cents, idempotency_key=key)
+         except ProviderTimeout:
+             continue
+     raise ChargeFailed(f"order {order_id}: no response after {MAX_ATTEMPTS} attempts")
+diff --git a/service/tests/test_double_charge.py b/service/tests/test_double_charge.py
+new file mode 100644
+index 0000000..696b8c1
+--- /dev/null
++++ b/service/tests/test_double_charge.py
+@@ -0,0 +1,38 @@
++"""Regression test: a timeout followed by a retry must not charge the order twice."""
++
++import pytest
++
++from ..charge_client import charge_order
++from ..provider import FakeProvider
++from ..store import connect, create_db
++
++
++@pytest.fixture
++def conn(tmp_path):
++    db_path = str(tmp_path / "payments.db")
++    create_db(db_path)
++    conn = connect(db_path)
++    conn.execute("INSERT INTO customers VALUES ('CUS-1', 'Ana Silva', 'ana@example.com')")
++    conn.execute(
++        "INSERT INTO orders VALUES ('ORD-1', 'CUS-1', 'Desk lamp', 4900, '2026-10-01T10:00:00+00:00')"
++    )
++    yield conn
++    conn.close()
++
++
++def test_timeout_then_retry_charges_once(conn):
++    calls = []
++
++    def first_call_times_out(order_id):
++        # The provider records the charge, then the response is lost once.
++        calls.append(order_id)
++        return len(calls) == 1
++
++    provider = FakeProvider(conn, should_timeout=first_call_times_out)
++
++    charge_id = charge_order(provider, "ORD-1", 4900)
++
++    rows = conn.execute("SELECT id, amount_cents FROM charges WHERE order_id = 'ORD-1'").fetchall()
++    assert len(rows) == 1, f"expected exactly one charge, found {len(rows)}"
++    assert rows[0]["id"] == charge_id
++    assert rows[0]["amount_cents"] == 4900

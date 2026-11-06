@@ -1,0 +1,11 @@
+$ sqlite3 data/payments.db (read-only)  -- BEFORE Tushar's execute attempt   (12:54:48)
+id               status    approved_by  created_at                 executed_at              
+---------------  --------  -----------  -------------------------  -------------------------
+rb-da973e02dfbf  executed  strider5791  2026-11-06T07:23:09+00:00  2026-11-06T07:24:03+00:00
+refunds  refunded  emailed  customers  total      last_refunded_at         
+-------  --------  -------  ---------  ---------  -------------------------
+313      313       313      313        $21607.00  2026-11-06T07:24:03+00:00
+charges_refunded_twice
+----------------------
+0                     
+Mailpit total: 313

@@ -1,0 +1,14 @@
+# Amiya agreed to the delete in chat ('yes, delete')
+$ python switch/archive_rooms.py --delete   (13:08:17)
+Deleting #blast-ORD-100953
+exit code: 0
+
+$ make reset   (13:08:19)
+python3 run.py reset
+No rooms named blast-... to clear.
+Seeded data/payments.db: 2000 orders, 1400 customers
+Double charged: 313 customers (1 complained, 312 silent), $21,607.00 overcharged
+Complainer: Victor Tanaka, order ORD-100953
+Emptied the Mailpit inbox.
+Now type !reset-all-agents in #support, so Support and Fixer start fresh.
+exit code: 0

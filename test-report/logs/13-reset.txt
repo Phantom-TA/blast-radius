@@ -1,0 +1,9 @@
+$ make reset   (10:11:52)
+python3 run.py reset
+Archiving #blast-ORD-100953
+Seeded data/payments.db: 2000 orders, 1400 customers
+Double charged: 313 customers (1 complained, 312 silent), $21,607.00 overcharged
+Complainer: Victor Tanaka, order ORD-100953
+Emptied the Mailpit inbox.
+Now type !reset-all-agents in #support, so Support and Fixer start fresh.
+exit code: 0
