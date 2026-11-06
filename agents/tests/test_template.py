@@ -132,3 +132,9 @@ def test_no_word_incident_anywhere_agents_or_people_read():
     for path in [*SWITCH_DIR.rglob("*.md"), SWITCH_DIR / "template.yaml"]:
         for line in path.read_text(encoding="utf-8").lower().splitlines():
             assert "incident" not in line or "never use the word" in line, path
+
+
+def test_support_opens_a_new_room_even_when_one_with_that_name_exists():
+    # On the retake, Support said the order "already has a room" and opened none.
+    support = template()["resources"]["support"]["instructions"]
+    assert "never reuse it" in support and "never skip this step" in support
