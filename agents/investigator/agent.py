@@ -21,7 +21,7 @@ def report(backend) -> str:
     affected = backend.find_affected_customers(backend.db_path)
     summary = backend.summarize(affected)
     if not summary["count"]:
-        return "No double charges found. Every order has at most one successful charge."
+        return "No double charges are waiting for a refund right now."
 
     complained = summary["count"] - summary["silent_count"]
     lines = [

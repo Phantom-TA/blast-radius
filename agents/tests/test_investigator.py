@@ -37,7 +37,7 @@ def test_report_lists_only_five_rows_when_there_are_more():
 
 def test_report_when_nobody_is_affected():
     backend = SimpleNamespace(**(BACKEND.__dict__ | {"find_affected_customers": lambda _: []}))
-    assert report(backend).startswith("No double charges found")
+    assert report(backend) == "No double charges are waiting for a refund right now."
 
 
 def test_answers_in_the_asking_thread_and_mentions_whoever_asked():
