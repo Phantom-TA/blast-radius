@@ -406,3 +406,4 @@ class SwitchAgent:
             except Exception:
                 log.exception("%s: failed on message %s", self.name, message.message_id)
             self._advance(message.sequence)
+            queue.task_done()
