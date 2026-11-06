@@ -109,6 +109,7 @@ def listen_and_work(agent, monkeypatch, frames, handle, until):
         queue = asyncio.Queue()
         worker = asyncio.create_task(agent._work(queue, handle))
         await agent._listen(queue)
+        await asyncio.wait_for(queue.join(), 5)  # every queued message handled
         for _ in range(200):
             if until():
                 break

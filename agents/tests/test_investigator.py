@@ -16,11 +16,15 @@ def test_report_has_counts_total_and_top_five():
     text = report(BACKEND)
     assert "**5 customers were double charged**, $481.75 USD in total." in text
     assert "1 complained. **4 have not said anything yet.**" in text
-    rows = [line for line in text.splitlines() if line.startswith("| CUS-")]
+    rows = [line for line in text.splitlines() if line.startswith("- CUS-")]
     assert len(rows) == 5
     # Biggest overcharge first.
-    assert rows[0].startswith("| CUS-0230 | mia.berg@example.com | ORD-100702 | 2 | $230.00 |")
-    assert rows[-1].startswith("| CUS-0105 ")
+    assert rows[0] == "- CUS-0230, mia.berg@example.com, ORD-100702: 2 charges, $230.00 over"
+    assert rows[-1].startswith("- CUS-0105,")
+
+
+def test_report_has_no_table_because_discord_shows_it_as_raw_pipes():
+    assert "|" not in report(BACKEND)
 
 
 def test_report_lists_only_five_rows_when_there_are_more():
@@ -28,12 +32,12 @@ def test_report_lists_only_five_rows_when_there_are_more():
     backend = SimpleNamespace(**(BACKEND.__dict__ | {"find_affected_customers": lambda _: many}))
     text = report(backend)
     assert "**15 customers" in text
-    assert len([line for line in text.splitlines() if line.startswith("| CUS-")]) == 5
+    assert len([line for line in text.splitlines() if line.startswith("- CUS-")]) == 5
 
 
 def test_report_when_nobody_is_affected():
     backend = SimpleNamespace(**(BACKEND.__dict__ | {"find_affected_customers": lambda _: []}))
-    assert report(backend).startswith("No double charges found")
+    assert report(backend) == "No double charges are waiting for a refund right now."
 
 
 def test_answers_in_the_asking_thread_and_mentions_whoever_asked():

@@ -1,9 +1,9 @@
-"""The Treasurer: builds and executes refund batches. No LLM, and it takes orders from people only.
+"""The Treasurer: builds and executes refund batches. No LLM, and it only obeys its owner.
 
-Two locks keep agents away from the money:
-1. Switch: its addressing is owner_only, so Switch never delivers another agent's
-   @mention and posts a refusal in the room instead.
-2. This code: a message that still arrives from anyone but a person is refused here.
+Its owner is the Finance lead. Two locks keep everyone else away from the money:
+1. Switch: its addressing is owner_only ("Only me"), so Switch never delivers anyone
+   else's @mention and posts a refusal in the room instead.
+2. This code: a message that still arrives from anyone but the owner is refused here.
 
 Commands (anything else gets the help text):
     prepare refunds           build a batch for every affected customer, ask for approval
@@ -16,7 +16,7 @@ import logging
 import re
 from pathlib import Path
 
-from agents.common.switch_client import STATE_DIR, Message, SwitchAgent
+from agents.common.switch_client import STATE_DIR, Message, SwitchAgent, SwitchError
 
 log = logging.getLogger("treasurer")
 
@@ -34,14 +34,13 @@ EMAILS = re.compile(r"\bsend\s+emails?\s+(?:for\s+)?`?([\w-]+)`?", re.IGNORECASE
 MAIL_DOWN = "I couldn't reach the mail server (is Mailpit running? `make up` starts it)"
 
 HELP = (
-    "I handle refunds, and I only take instructions from people. Say:\n"
-    "- `@treasurer prepare refunds` to build a refund batch for approval\n"
-    "- `@treasurer execute <batch id>` to approve and refund it\n"
-    "- `@treasurer send emails <batch id>` to retry the apology emails"
+    "I handle refunds, and I only take instructions from the Finance lead. Mention me and say:\n"
+    "- `prepare refunds` to build a refund batch for approval\n"
+    "- `execute <batch id>` to approve and refund it\n"
+    "- `send emails <batch id>` to retry the apology emails"
 )
-NOT_A_PERSON = (
-    "I only take instructions from people, so I won't act on this. "
-    "A person has to send me the request."
+NOT_THE_OWNER = (
+    "I only take refund instructions from the Finance lead, so I won't act on this."
 )
 
 
@@ -81,12 +80,22 @@ class Treasurer:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         self.state_file.write_text(json.dumps(origins, indent=2))
 
+    def _from_owner(self, person: str | None) -> bool:
+        """Fails closed: if Switch can't say who the owner is, nobody moves money."""
+        if person is None:
+            return False
+        try:
+            return self.switch.is_owner(person)
+        except (SwitchError, OSError) as error:
+            log.warning("couldn't look up the owner: %s", error)
+            return False
+
     def handle(self, message: Message) -> None:
         person = self.switch.person_name(message)
-        if person is None:
-            log.warning("refused %s (kind %s, role %s): not a person",
+        if not self._from_owner(person):
+            log.warning("refused %s (kind %s, role %s): not the owner",
                         message.sender_name, message.sender_kind, message.sender_role)
-            self.switch.reply(message, NOT_A_PERSON)
+            self.switch.reply(message, NOT_THE_OWNER)
             return
 
         text = message.text_without_mentions()
@@ -133,15 +142,19 @@ class Treasurer:
             f"{summary['currency']} in total (each refund is exactly the duplicate charge)\n"
             f"- Requested by {person} in #{self.switch.room_name(message.room_id)}\n"
             f"- Then I email each customer the approved apology\n\n"
-            f"Nothing has been refunded yet. To approve, reply: `@treasurer execute {batch_id}`",
+            # No @treasurer here: Discord turns it into a raw role code, even in backticks.
+            f"Nothing has been refunded yet. To approve, mention me and say: `execute {batch_id}`",
             mention=[person],
         )
         if finance != message.room_id:
-            self.switch.reply(
-                message,
+            # Mention Support so it wakes up and carries on.
+            self.switch.send(
+                message.room_id,
                 f"Batch `{batch_id}` is ready: {summary['count']} customers, "
-                f"{money(summary['total_overcharge'])}. It is waiting for a person's approval "
-                f"in #{FINANCE_ROOM}.",
+                f"{money(summary['total_overcharge'])}. It is waiting for the Finance lead's "
+                f"approval in #{FINANCE_ROOM}.",
+                mention=[SUPPORT_AGENT],
+                thread_id=message.reply_thread,
             )
 
     def execute(self, message: Message, batch_id: str, person: str) -> None:
@@ -156,7 +169,7 @@ class Treasurer:
             reason = MAIL_DOWN if isinstance(error, OSError) else str(error)
             log.warning("refunded %s but emails failed: %s", batch_id, error)
             failed = (f"The refunds are done, but no apology emails went out: {reason}. "
-                      f"Once that's fixed, say `@treasurer send emails {batch_id}`.")
+                      f"Once that's fixed, mention me and say `send emails {batch_id}`.")
             self.switch.reply(message, failed)
             origin = self._origins().get(batch_id)
             if origin and origin != message.room_id:

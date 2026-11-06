@@ -1,5 +1,7 @@
 # Switch side: handoff to Person B
 
+> **This is a record of the handoff for PR #3, kept for history.** The project has moved on since: the demo now runs with two people on Discord, and the Treasurer takes instructions from its owner only. The current steps are in [SETUP.md](SETUP.md).
+
 From Person A (branch `feat/switch-agents`), for Person B. Updated 5 Nov, for PR #3.
 
 **What you need to do: merge PR #3. Nothing else.** It only touches `agents/`, `switch/` and this file, and it already contains `main` (merged cleanly, no conflicts). On the merged code all 138 tests pass (`python -m pytest payments_app agents/tests`).

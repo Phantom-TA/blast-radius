@@ -2,9 +2,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from agents.common.switch_client import SwitchError
 from agents.tests import fakes
 from agents.tests.chat import FakeSwitch, message
-from agents.treasurer.agent import NOT_A_PERSON, Treasurer, parse_apology
+from agents.treasurer.agent import NOT_THE_OWNER, Treasurer, parse_apology
 
 WORDING = (
     "Subject: Sorry about order {order_id}\n"
@@ -34,38 +35,59 @@ def treasurer(backend, tmp_path, documents=None):
 def test_refuses_an_agent_and_touches_nothing(backend, tmp_path):
     agent, switch = treasurer(backend, tmp_path)
     agent.handle(message("@treasurer prepare refunds", sender="@support:localhost", role=None))
-    assert switch.replies[0][1] == NOT_A_PERSON
+    assert switch.replies[0][1] == NOT_THE_OWNER
     assert fakes.batches == {}
 
 
 def test_refuses_switch_itself_even_on_behalf_of_a_person(backend, tmp_path):
     agent, switch = treasurer(backend, tmp_path)
     agent.handle(message("@treasurer prepare refunds", kind="platform", role="owner"))
-    assert switch.replies[0][1] == NOT_A_PERSON
+    assert switch.replies[0][1] == NOT_THE_OWNER
     assert fakes.batches == {}
 
 
 def test_refuses_a_chat_account_no_switch_user_has_claimed(backend, tmp_path):
     agent, switch = treasurer(backend, tmp_path)
     agent.handle(message("@treasurer prepare refunds", sender="@someone:localhost", role=None))
-    assert switch.replies[0][1] == NOT_A_PERSON
+    assert switch.replies[0][1] == NOT_THE_OWNER
     assert fakes.batches == {}
 
 
-def test_prepare_posts_the_batch_in_finance_approvals_and_mentions_the_person(backend, tmp_path):
+def test_refuses_a_linked_person_who_is_not_the_owner(backend, tmp_path):
     agent, switch = treasurer(backend, tmp_path)
+    agent.handle(message("@treasurer prepare refunds", sender="@colleague:localhost",
+                         role="member"))
+    assert switch.replies[0][1] == NOT_THE_OWNER
+    assert fakes.batches == {}
+
+
+def test_refuses_everyone_when_the_owner_cant_be_looked_up(backend, tmp_path):
+    agent, switch = treasurer(backend, tmp_path)
+    switch.owner_lookup_error = SwitchError(500, "down")
     agent.handle(message("@treasurer prepare refunds"))
+    assert switch.replies[0][1] == NOT_THE_OWNER
+    assert fakes.batches == {}
+
+
+def test_prepare_posts_the_batch_in_finance_approvals_and_wakes_support(backend, tmp_path):
+    agent, switch = treasurer(backend, tmp_path)
+    agent.handle(message("@treasurer prepare refunds", thread_id="root-7"))
 
     [batch_id] = fakes.batches
     assert fakes.batches[batch_id]["status"] == "pending_approval"
-    [post] = switch.sent
+    [post, pointer] = switch.sent
     assert post["room_id"] == "room-finance"
     assert post["mention"] == ["amiyasingh05"]
     assert f"Refund batch `{batch_id}` is waiting for approval." in post["text"]
     assert "5 customers, $481.75 USD in total" in post["text"]
-    assert f"`@treasurer execute {batch_id}`" in post["text"]
-    # And a pointer back in the room that asked.
-    assert "waiting for a person's approval in #finance-approvals" in switch.replies[0][1]
+    assert f"mention me and say: `execute {batch_id}`" in post["text"]
+    # Discord turns @treasurer into a raw role code, even inside backticks.
+    assert "@treasurer" not in post["text"]
+    # And a pointer back in the room that asked, naming the batch for Support.
+    assert pointer["room_id"] == "room-blast" and pointer["thread_id"] == "root-7"
+    assert pointer["mention"] == ["support"]
+    assert f"Batch `{batch_id}` is ready" in pointer["text"]
+    assert "waiting for the Finance lead's approval in #finance-approvals" in pointer["text"]
 
 
 def test_execute_refunds_then_emails_with_the_room_document(backend, tmp_path):

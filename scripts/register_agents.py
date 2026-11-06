@@ -35,14 +35,14 @@ AGENTS = [
         "investigator",
         "Investigator",
         "Finds every customer hit by the double charge. Plain Python, read-only, no LLM.",
-        "owner_and_owner_agents",
+        "anyone",
     ),
     (
         "treasurer",
         "Treasurer",
         "Builds and executes refund batches. Plain Python, no LLM. Takes instructions from "
-        "people only.",
-        "people_only",
+        "its owner, the Finance lead, and nobody else.",
+        "owner_only",
     ),
     (
         "customer-sim",
@@ -53,16 +53,12 @@ AGENTS = [
 ]
 
 
-# The rules Switch stores for each addressing choice. The first two are what Switch
-# Console offers (switch_core.addressing: owner_only_policy, owner_and_owner_agents_policy).
-# people_only is the docs' "people only" rule: any person (users "*"), no agent
-# (agents []). A chat account not linked to a Switch user still matches nobody.
+# The rules Switch stores for each addressing choice. owner_only is Console's "Only me"
+# (switch_core.addressing.owner_only_policy): the owner, and no other person or agent.
+# anyone clears the policy, which is Console's "Anyone": a teammate on Discord with no
+# Switch account can talk to the agent, because an open policy never asks who they are.
 ADDRESSING_POLICIES = {
     "owner_only": {"rules": [{"users": [], "agents": [], "owner": True}]},
-    "people_only": {"rules": [{"users": "*", "agents": [], "owner": True}]},
-    "owner_and_owner_agents": {
-        "rules": [{"users": [], "agents": [], "owner": True, "owner_agents": True}]
-    },
     "anyone": None,
 }
 

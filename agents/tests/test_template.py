@@ -69,12 +69,72 @@ def test_apology_placeholders_match_the_ones_the_email_code_accepts():
     support = template()["resources"]["support"]["instructions"]
     placeholders = set(re.findall(r"\{(\w+)\}", support))
     assert {"name", "order_id", "amount"} <= placeholders
-    # Nothing else in braces: an agent's fields can't use a bridge or room param
-    # (the server only resolves those for rooms), and anything else would be filled in.
-    assert placeholders == {"name", "order_id", "amount"}
+    # Nothing else in braces but the two string params: an agent's fields can't use a bridge
+    # or room param (the server only resolves those for rooms), and anything else would be
+    # filled in.
+    assert placeholders == {"name", "order_id", "amount", "support_lead", "finance_lead"}
+
+
+def test_every_param_an_agent_uses_is_declared():
+    document = template()
+    for param in ("support_lead", "finance_lead"):
+        assert document["params"][param]["type"] == "string"
+        assert document["params"][param]["required"] is True
+
+
+def test_agents_name_people_by_param_not_by_creator():
+    # In an agent's instructions Switch fills {$creator} with the Switch account's name
+    # ("Admin"), which Discord doesn't know: Support could neither add nor ping the
+    # Finance lead. Rooms resolve {$creator} to the chat username, so they keep it.
+    resources = template()["resources"]
+    for key in ("support", "fixer"):
+        assert "{$creator}" not in resources[key]["instructions"]
+    assert resources["support_room"]["users"] == ["{$creator}"]
+
+
+def test_support_pastes_the_apology_where_people_can_read_it():
+    # Discord shows a room document only as "created room document …".
+    support = template()["resources"]["support"]["instructions"]
+    assert "paste the document's whole content as a quote" in support
+
+
+def test_support_and_fixer_are_open_so_the_support_lead_can_reach_them():
+    resources = template()["resources"]
+    assert resources["support"]["addressing"] == "anyone"
+    assert resources["fixer"]["addressing"] == "anyone"
+
+
+def test_rooms_are_public_so_both_people_see_them():
+    resources = template()["resources"]
+    assert resources["support_room"]["channel_type"] == "channel_public"
+    assert resources["finance_room"]["channel_type"] == "channel_public"
+    assert "channel_type: channel_public" in resources["support"]["instructions"]
+
+
+def test_the_template_uses_discord_when_it_can_and_mattermost_otherwise():
+    assert template()["params"]["bridge"]["default"] == ["Discord", "Mattermost", "$first"]
+
+
+def test_the_support_lead_approves_the_work_and_the_finance_lead_the_money():
+    resources = template()["resources"]
+    support = resources["support"]["instructions"]
+    assert "@{support_lead} to approve the wording" in support
+    assert "ask @{finance_lead} to mention the Treasurer" in support
+    assert "ask @{support_lead} to approve the change" in resources["fixer"]["instructions"]
+
+
+def test_no_instruction_assumes_a_particular_chat_app():
+    for key in ("support", "fixer"):
+        assert "mattermost" not in template()["resources"][key]["instructions"].lower()
 
 
 def test_no_word_incident_anywhere_agents_or_people_read():
     for path in [*SWITCH_DIR.rglob("*.md"), SWITCH_DIR / "template.yaml"]:
         for line in path.read_text(encoding="utf-8").lower().splitlines():
             assert "incident" not in line or "never use the word" in line, path
+
+
+def test_support_opens_a_new_room_even_when_one_with_that_name_exists():
+    # On the retake, Support said the order "already has a room" and opened none.
+    support = template()["resources"]["support"]["instructions"]
+    assert "never reuse it" in support and "never skip this step" in support

@@ -16,11 +16,29 @@ params:
       clone, for example /Users/you/blast-radius/demo-workspace/payments-service.
       `make scenario` creates it.
     required: true
+  support_lead:
+    type: string
+    label: Support lead's chat username
+    description: >-
+      The username, on the messaging app below, of the person who approves the
+      code fix and the apology. If you're running this alone, use your own.
+    required: true
+  # Not {$creator}: in an agent's instructions Switch fills that with your Switch
+  # account's name ("Admin"), which no chat app knows. Rooms resolve it correctly.
+  finance_lead:
+    type: string
+    label: Finance lead's chat username
+    description: >-
+      Your own username on the messaging app below. You own the Treasurer, so you
+      are the Finance lead, the only person who can move money.
+    required: true
   bridge:
     type: bridge
     label: Messaging app
-    description: Where the rooms are created. Mattermost on Switch's local server.
-    default: [Mattermost, $first]
+    description: >-
+      Where the rooms are created. Discord for two people, or the Mattermost
+      that comes with Switch's local server for one.
+    default: [Discord, Mattermost, $first]
   machine:
     type: machine
     description: The machine the two Claude Code agents run on.
@@ -46,6 +64,8 @@ resources:
     provider: claude
     machine: "{machine}"
     directory: "{support_dir}"
+    # The Support lead has no Switch account, so only "anyone" lets them reach it.
+    addressing: anyone
     instructions: |
       @include agent-instructions/support.md
 
@@ -59,6 +79,7 @@ resources:
     provider: claude
     machine: "{machine}"
     directory: "{workspace}"
+    addressing: anyone
     instructions: |
       @include agent-instructions/fixer.md
 
@@ -67,7 +88,7 @@ resources:
     name: Blast Radius
     description: From one customer's complaint to refunds for everyone the bug hit.
     links:
-      - { from: support_room, to: finance_room, label: where refunds wait for a person }
+      - { from: support_room, to: finance_room, label: where refunds wait for the Finance lead }
       - { from: finance_room, to: support_room, label: where customers complain }
 
   support_room:
@@ -76,6 +97,7 @@ resources:
     name: support
     description: Acme Store's customer support desk. Customers write here.
     bridge: "{bridge}"
+    channel_type: channel_public
     # fixer sits here too, so !reset-all-agents in #support resets both Claude Code agents.
     agents: [support, fixer, customer-sim]
     users: ["{$creator}"]
@@ -89,8 +111,9 @@ resources:
     type: room
     group: blast_radius
     name: finance-approvals
-    description: Every money action waits here for a person.
+    description: Every money action waits here for the Finance lead.
     bridge: "{bridge}"
+    channel_type: channel_public
     agents: [treasurer, support]
     users: ["{$creator}"]
     instructions: |
