@@ -147,7 +147,7 @@ def test_mail_server_down_after_refunding_says_the_money_moved_and_how_to_finish
     backend.send_apology_emails = no_mail
     reply = run.say(f"@treasurer execute {batch_id}", room_id="room-finance")
     assert reply == (f"The refunds are done, but no apology emails went out: {MAIL_DOWN}. "
-                     f"Once that's fixed, say `@treasurer send emails {batch_id}`.")
+                     f"Once that's fixed, mention me and say `send emails {batch_id}`.")
     assert fakes.batches[batch_id]["status"] == "executed"
     # The room the batch came from hears it too.
     assert "The refunds are done, but no apology emails went out" in run.switch.sent[-1]["text"]
@@ -207,7 +207,7 @@ def test_without_finance_approvals_it_asks_for_approval_where_it_was_asked(run, 
     [post] = run.switch.sent
     assert post["room_id"] == "room-blast"
     assert post["mention"] == ["amiyasingh05"]
-    assert f"`@treasurer execute {batch_id}`" in post["text"]
+    assert f"`execute {batch_id}`" in post["text"]
 
 
 def test_a_corrupt_state_file_is_ignored(run):

@@ -80,7 +80,9 @@ def test_prepare_posts_the_batch_in_finance_approvals_and_wakes_support(backend,
     assert post["mention"] == ["amiyasingh05"]
     assert f"Refund batch `{batch_id}` is waiting for approval." in post["text"]
     assert "5 customers, $481.75 USD in total" in post["text"]
-    assert f"`@treasurer execute {batch_id}`" in post["text"]
+    assert f"mention me and say: `execute {batch_id}`" in post["text"]
+    # Discord turns @treasurer into a raw role code, even inside backticks.
+    assert "@treasurer" not in post["text"]
     # And a pointer back in the room that asked, naming the batch for Support.
     assert pointer["room_id"] == "room-blast" and pointer["thread_id"] == "root-7"
     assert pointer["mention"] == ["support"]

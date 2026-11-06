@@ -34,10 +34,10 @@ EMAILS = re.compile(r"\bsend\s+emails?\s+(?:for\s+)?`?([\w-]+)`?", re.IGNORECASE
 MAIL_DOWN = "I couldn't reach the mail server (is Mailpit running? `make up` starts it)"
 
 HELP = (
-    "I handle refunds, and I only take instructions from the Finance lead. Say:\n"
-    "- `@treasurer prepare refunds` to build a refund batch for approval\n"
-    "- `@treasurer execute <batch id>` to approve and refund it\n"
-    "- `@treasurer send emails <batch id>` to retry the apology emails"
+    "I handle refunds, and I only take instructions from the Finance lead. Mention me and say:\n"
+    "- `prepare refunds` to build a refund batch for approval\n"
+    "- `execute <batch id>` to approve and refund it\n"
+    "- `send emails <batch id>` to retry the apology emails"
 )
 NOT_THE_OWNER = (
     "I only take refund instructions from the Finance lead, so I won't act on this."
@@ -142,7 +142,8 @@ class Treasurer:
             f"{summary['currency']} in total (each refund is exactly the duplicate charge)\n"
             f"- Requested by {person} in #{self.switch.room_name(message.room_id)}\n"
             f"- Then I email each customer the approved apology\n\n"
-            f"Nothing has been refunded yet. To approve, reply: `@treasurer execute {batch_id}`",
+            # No @treasurer here: Discord turns it into a raw role code, even in backticks.
+            f"Nothing has been refunded yet. To approve, mention me and say: `execute {batch_id}`",
             mention=[person],
         )
         if finance != message.room_id:
@@ -168,7 +169,7 @@ class Treasurer:
             reason = MAIL_DOWN if isinstance(error, OSError) else str(error)
             log.warning("refunded %s but emails failed: %s", batch_id, error)
             failed = (f"The refunds are done, but no apology emails went out: {reason}. "
-                      f"Once that's fixed, say `@treasurer send emails {batch_id}`.")
+                      f"Once that's fixed, mention me and say `send emails {batch_id}`.")
             self.switch.reply(message, failed)
             origin = self._origins().get(batch_id)
             if origin and origin != message.room_id:
