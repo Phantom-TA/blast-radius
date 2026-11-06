@@ -139,7 +139,7 @@ make reset
 
 This also archives the old blast room (its history and documents are kept), because the next run needs that name again. Then type `!reset-all-agents` in #support, so Support and Fixer forget the last run, and run `make scenario`. The customer agent answers that its session can't be reset; that's harmless.
 
-The old channel stays in the chat app's sidebar, so a rerun adds a second channel with the same name.
+The old channel stays in the chat app's sidebar, so a rerun adds a second channel with the same name. The refund batch id is the same on every run (it is a hash of the same seeded charges), so seeing the old id again does not mean old data is left over.
 
 ## Two people on Discord
 
