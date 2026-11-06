@@ -27,7 +27,7 @@ Either way, Switch runs on one computer. On a local server only one person can s
 You need about 16 GB of RAM and 15 to 20 GB of free disk. Close other heavy apps before a run.
 
 - **Docker Desktop.** Open it and wait until it says the engine is running. Switch's built-in chat (Mattermost) and our payment app both run in Docker. **Start Docker before Switch Console**, and keep it running: if Docker stops, Mattermost stops and no room can be created.
-- **Claude Code**, signed in: run `claude` once and log in.
+- **Claude Code**, signed in: run `claude` once and log in, and check that `claude --version` prints a version number. Switch starts Support and Fixer by running `claude` itself, so if the command fails (for example after an interrupted update) they never reply and the Switch Console log says "The session host is not running". Reinstall Claude Code to fix it.
 - **Python 3.11 or newer** and **git**.
 - **Switch Console 0.40.1.**
 
