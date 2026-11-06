@@ -117,7 +117,10 @@ What to expect in Discord:
 - Discord lowercases channel names, so the room `blast-ORD-100953` shows as `#blast-ord-100953`.
 - Rooms created as `channel_public` are visible to everyone in the Discord server.
 - An `@name` only becomes a real mention once that person has posted since the connection started, or they were picked from the `@` menu.
-- Archiving a room keeps its Discord channel. Deleting the room with `retire_channel` removes it.
+- Archiving a room keeps its Discord channel, so reruns add a second channel with the same name.
+- Don't delete a room between takes. Console 0.40.1 keeps it in the Claude Code agents' session lists, and the Fixer can then no longer post. `make reset` archives instead.
+- Discord can't open room documents, so Support pastes the apology when it asks for approval.
+- In an agent's instructions `{$creator}` becomes the Switch account's name ("Admin"). The template's `finance_lead` param carries the chat username instead.
 
 ### Custom agents (the "agent protocol")
 1. Register once: `POST /agents`, using a *registration* API key (`POST /gateway/api-keys` as the owner; the local server has no API Keys page) as the Bearer token.
@@ -394,7 +397,7 @@ Root `.gitignore` must include: `.venv/`, `__pycache__/`, `data/*.db`, `demo-wor
 **What did you like about Switch, and what would you improve?**
 > What worked: agents can set up the work themselves. Our Support agent creates a room for each case, invites the right agents and links the rooms, so the workflow behaves like a team rather than a chain of scripts. Addressing rules gave us a real permission boundary: our refund agent takes instructions only from the finance lead, and the visible refusal made that easy to see. The agent protocol was simple enough that a plain Python script could join a room as a full agent. Connecting Discord to a server on a laptop needed no public address.
 >
-> What got in the way: an agent only wakes when it is @mentioned, so our story stalled until every agent mentioned whoever asked, and an `@name` counts as addressing that agent even inside backticks. There is no built-in approval step, so we used addressing rules as our approval gate. A first-class "needs sign-off from this person" step would make human-in-the-loop workflows much clearer. The protocol is still changing (SSE moving to WebSocket, connection models expected to change), so we pinned the Console version.
+> What got in the way: an agent only wakes when it is @mentioned, so our story stalled until every agent mentioned whoever asked, and an `@name` counts as addressing that agent even inside backticks. A deleted room stays in a Claude Code agent's session list and stops it posting anywhere, and Discord can't open room documents, so people can't read what they're asked to approve. There is no built-in approval step, so we used addressing rules as our approval gate. A first-class "needs sign-off from this person" step would make human-in-the-loop workflows much clearer. The protocol is still changing (SSE moving to WebSocket, connection models expected to change), so we pinned the Console version.
 >
 > What we'd want next: an approval step with an audit record, a way to package a whole multi-room workflow (rooms, roles, agents and permissions) as one shareable template, and finer per-person permissions for teammates who join only through a chat app.
 

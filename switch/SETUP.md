@@ -24,6 +24,8 @@ Either way, Switch runs on one computer. On a local server only one person can s
 
 ## 1. Install the tools
 
+You need about 16 GB of RAM and 15 to 20 GB of free disk. Close other heavy apps before a run.
+
 - **Docker Desktop.** Open it and wait until it says the engine is running. Switch's built-in chat (Mattermost) and our payment app both run in Docker. **Start Docker before Switch Console**, and keep it running: if Docker stops, Mattermost stops and no room can be created.
 - **Claude Code**, signed in: run `claude` once and log in.
 - **Python 3.11 or newer** and **git**.
@@ -95,7 +97,7 @@ To do the same by hand in Console: open **Templates**, paste the contents of `sw
 
 ## 7. Start the Python agents
 
-In a second terminal (`source .venv/bin/activate` first), and leave it running:
+First make sure no earlier `make agents` is still running: two copies would answer every message twice. Then, in a second terminal (`source .venv/bin/activate` first), leave this running:
 
 ```bash
 make agents
@@ -117,7 +119,7 @@ You are both the Support lead and the Finance lead here:
 4. Support writes the apology as the room document **apology-email** and asks you to approve it. Read it, then reply: `@support Wording approved.`
 5. Support asks you to prepare the refunds. In #blast-ORD-100953, send: `@treasurer prepare refunds`
 6. The Treasurer posts the batch in **#finance-approvals**. Support tries to execute it, and **Switch refuses**: the Treasurer takes instructions from you alone.
-7. In #finance-approvals, reply with the line the Treasurer gave you: `@treasurer execute rb-...`
+7. In #finance-approvals, send `@treasurer execute rb-...`, with the batch id the Treasurer gave you.
 8. The Treasurer refunds 313 customers and sends 313 apology emails. Watch http://localhost:8025 fill up.
 9. Support writes the **postmortem** room document and tells the customer in #support.
 
@@ -135,7 +137,9 @@ All four lines should say PASS.
 make reset
 ```
 
-This also archives the old blast room (its history and documents are kept), because the next run needs that name again. Then type `!reset-all-agents` in #support, so Support and Fixer forget the last run, and run `make scenario`.
+This also archives the old blast room (its history and documents are kept), because the next run needs that name again. Then type `!reset-all-agents` in #support, so Support and Fixer forget the last run, and run `make scenario`. The customer agent answers that its session can't be reset; that's harmless.
+
+The old channel stays in the chat app's sidebar, so a rerun adds a second channel with the same name.
 
 ## Two people on Discord
 
@@ -197,6 +201,8 @@ This is `make scenario` without the complaint, because a real person posts it. T
 
 ### D5. Run the story
 
+Agree the order before you start. The Finance lead must wait until the Support lead has tried and been refused at step 12: nothing in Discord stops them executing early.
+
 | # | Who | Where | What |
 |---|---|---|---|
 | 1 | Support lead | #support | `Customer emailed: charged twice for order ORD-100953. @support can you check?` |
@@ -253,6 +259,7 @@ If Claude Code's permission prompts interrupt a recording, turn on **Bypass perm
 - **A channel in Discord isn't a room yet.** Post a message in it. Inviting the bot isn't enough.
 - **An `@name` shows as plain text on Discord.** That person hasn't posted since the connection started. They should post once.
 - **Rooms were created on the wrong app.** `import_template.py` prefers Discord when it's connected. To choose, add `--bridge "<connection name>"`.
+- **Discord thread titles show a code like `<@&1568…>`.** Switch names the thread from the first message, and that's a mention in Discord's own format. It comes from Switch, not this project, and it doesn't affect anything.
 
 ## Where Switch differs from what we expected
 
