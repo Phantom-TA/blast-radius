@@ -3,21 +3,27 @@
     python switch/export_transcript.py
 
 Writes docs/reference-transcript.md, so anyone can read what a full run looks like
-without running it. Run it before switch/archive_rooms.py --delete, which removes the
-history of the blast room. Runs as the agents' owner through the Gateway API.
+without running it. Run it before make reset, while the blast room is still live.
+
+It reads through the Python agents, one that belongs to each room, because Switch only
+lets a room's members read it and the owner's login isn't a member. read_context takes
+a room id, so this needs no open connection and doesn't disturb a running agent.
 """
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from agents.common.gateway import gateway_session  # noqa: E402
-from agents.common.switch_client import find_server_url  # noqa: E402
+from agents.common.switch_client import SwitchAgent, SwitchError  # noqa: E402
 
 OUTPUT = ROOT / "docs" / "reference-transcript.md"
 PAGE_SIZE = 200
+# The rooms in the order the story visits them, each with an agent that is a member.
+READERS = (("support", "customer-sim"), ("blast-", "investigator"),
+           ("finance-approvals", "treasurer"))
 HEADER = """# Reference transcript
 
 The room history from a real run of Blast Radius, exported with
@@ -25,25 +31,28 @@ The room history from a real run of Blast Radius, exported with
 """
 
 
-def room_messages(gateway, room_id: str) -> list[dict]:
-    """Every message in a room, oldest first. Each page ends at the newest it was asked for."""
-    messages = []
+def as_time(milliseconds: int) -> datetime:
+    return datetime.fromtimestamp(milliseconds / 1000, tz=timezone.utc)
+
+
+def room_messages(agent, room_id: str) -> list[dict]:
+    """Every message in a room, oldest first. read_context pages backwards through time."""
+    messages = {}
     before = None
     while True:
-        query = f"?limit={PAGE_SIZE}" + (f"&beforeSeq={before}" if before else "")
-        page = gateway("GET", f"/chats/{room_id}/messages{query}")
-        messages += page["messages"]
-        if not page["hasMore"] or not page["messages"]:
-            return sorted(messages, key=lambda message: message["seq"])
-        before = min(message["seq"] for message in page["messages"])
-
-
-def story_rooms(rooms: list[dict]) -> list[dict]:
-    """The rooms in the order the story visits them."""
-    def wanted(prefix: str) -> list[dict]:
-        return [room for room in rooms if room["name"].startswith(prefix)]
-
-    return [*wanted("support"), *wanted("blast-"), *wanted("finance-approvals")]
+        args = {"room_id": room_id, "limit": PAGE_SIZE}
+        if before:
+            args["before"] = before
+        page = agent.call("read_context", args, bound=False)
+        for thread in page["threads"]:
+            for entry in (thread["root"], *thread["replies"]):
+                if entry["kind"] == "message":
+                    messages[entry["id"]] = entry
+        oldest = page.get("oldest_timestamp")
+        next_before = as_time(oldest).isoformat() if oldest else None
+        if not page["truncated"] or next_before in (None, before):
+            return sorted(messages.values(), key=lambda message: message["timestamp"])
+        before = next_before
 
 
 def render(transcripts: list[tuple[str, list[dict]]]) -> str:
@@ -51,18 +60,26 @@ def render(transcripts: list[tuple[str, list[dict]]]) -> str:
     for room_name, messages in transcripts:
         sections.append(f"## #{room_name}\n")
         for message in messages:
-            sections.append(f"**{message['sender']['name']}** ({message['sentAt']})\n")
+            sent = as_time(message["timestamp"]).strftime("%Y-%m-%d %H:%M:%S UTC")
+            sections.append(f"**{message['sender_name']}** ({sent})\n")
             sections.append(f"{message['body'].strip()}\n")
     return "\n".join(sections)
 
 
 def main() -> int:
-    gateway = gateway_session(find_server_url(), quiet=True)
-    rooms = story_rooms(gateway("GET", "/rooms"))
-    if not rooms:
+    transcripts = []
+    try:
+        for prefix, reader in READERS:
+            agent = SwitchAgent(reader)
+            for room in agent.rooms():
+                if room["name"].lstrip("#").startswith(prefix):
+                    transcripts.append((room["name"], room_messages(agent, room["id"])))
+    except SwitchError as error:
+        print(f"Couldn't read the rooms: {error}")
+        return 1
+    if not transcripts:
         print("No rooms to export yet.")
         return 1
-    transcripts = [(room["name"], room_messages(gateway, room["id"])) for room in rooms]
     OUTPUT.parent.mkdir(exist_ok=True)
     OUTPUT.write_text(render(transcripts), encoding="utf-8")
     print(f"Wrote {OUTPUT.relative_to(ROOT)}: "

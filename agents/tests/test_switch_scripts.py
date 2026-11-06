@@ -145,39 +145,71 @@ def test_failing_to_add_the_support_lead_does_not_stop_the_setup(capsys):
     assert "Couldn't add tushar to #support" in capsys.readouterr().out
 
 
-def chat_message(seq, body="Hello", name="support"):
-    return {"seq": seq, "body": body, "sentAt": "2026-11-05T10:00:00Z", "sender": {"name": name}}
+def entry(entry_id, timestamp, body="Hello", name="support", kind="message"):
+    return {"id": entry_id, "kind": kind, "sender_name": name, "body": body,
+            "timestamp": timestamp}
+
+
+def thread(root, *replies):
+    return {"root": root, "replies": list(replies)}
+
+
+class ContextReader:
+    """Answers read_context from a list of pages, and records what it was asked."""
+
+    def __init__(self, pages):
+        self.pages, self.asked = pages, []
+
+    def call(self, operation, args, bound=True):
+        self.asked.append((operation, args, bound))
+        return self.pages.pop(0)
 
 
 def test_room_messages_reads_every_page_and_returns_oldest_first():
-    pages = [
-        {"messages": [chat_message(3), chat_message(4)], "hasMore": True},
-        {"messages": [chat_message(1), chat_message(2)], "hasMore": False},
+    reader = ContextReader([
+        {"threads": [thread(entry("c", 3000), entry("d", 4000))], "truncated": True,
+         "oldest_timestamp": 3000},
+        {"threads": [thread(entry("a", 1000)), thread(entry("b", 2000))], "truncated": False,
+         "oldest_timestamp": 1000},
+    ])
+    messages = export_transcript.room_messages(reader, "room-1")
+    assert [message["id"] for message in messages] == ["a", "b", "c", "d"]
+    assert reader.asked == [
+        ("read_context", {"room_id": "room-1", "limit": 200}, False),
+        ("read_context", {"room_id": "room-1", "limit": 200,
+                          "before": "1970-01-01T00:00:03+00:00"}, False),
     ]
-    requested = []
-
-    def gateway(method, path):
-        requested.append(path)
-        return pages.pop(0)
-
-    messages = export_transcript.room_messages(gateway, "room-1")
-    assert [message["seq"] for message in messages] == [1, 2, 3, 4]
-    assert requested == ["/chats/room-1/messages?limit=200",
-                         "/chats/room-1/messages?limit=200&beforeSeq=3"]
 
 
-def test_story_rooms_follow_the_story_and_skip_the_rest():
-    rooms = [{"name": "finance-approvals"}, {"name": "town-square"},
-             {"name": "blast-ORD-100953"}, {"name": "support"}]
-    assert [room["name"] for room in export_transcript.story_rooms(rooms)] == [
-        "support", "blast-ORD-100953", "finance-approvals",
-    ]
+def test_room_messages_skips_joins_and_never_repeats_a_message():
+    reader = ContextReader([{
+        "threads": [thread(entry("a", 1000)), thread(entry("a", 1000)),
+                    thread(entry("j", 2000, kind="room_join"))],
+        "truncated": False,
+    }])
+    assert [message["id"] for message in export_transcript.room_messages(reader, "r")] == ["a"]
+
+
+def test_room_messages_stops_if_the_pages_stop_moving_back():
+    page = {"threads": [thread(entry("a", 1000))], "truncated": True, "oldest_timestamp": 1000}
+    reader = ContextReader([dict(page), dict(page)])
+    assert len(export_transcript.room_messages(reader, "r")) == 1
+    assert len(reader.asked) == 2
+
+
+def test_each_room_is_read_by_an_agent_that_belongs_to_it():
+    assert export_transcript.READERS == (
+        ("support", "customer-sim"), ("blast-", "investigator"),
+        ("finance-approvals", "treasurer"),
+    )
 
 
 def test_render_names_each_room_and_sender():
-    text = export_transcript.render([("support", [chat_message(1, "Charged twice", "tushar")])])
+    text = export_transcript.render(
+        [("support", [entry("a", 1000, "Charged twice", "phantom8817")])]
+    )
     assert "## #support" in text
-    assert "**tushar** (2026-11-05T10:00:00Z)" in text
+    assert "**phantom8817** (1970-01-01 00:00:01 UTC)" in text
     assert "Charged twice" in text
     assert "simulated" in text
 
