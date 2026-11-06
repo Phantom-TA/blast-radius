@@ -30,6 +30,8 @@ from agents.common.switch_client import SwitchAgent, find_server_url  # noqa: E4
 
 TEMPLATE = ROOT / "switch" / "template.yaml"
 GROUP = "Blast Radius"
+# Creating the agents and rooms can take a couple of minutes on a slow computer.
+TEMPLATE_TIMEOUT = 600
 ROOMS = {"support", "finance-approvals"}
 WORKSPACE = ROOT / "demo-workspace" / "payments-service"
 # The apology placeholders are meant to stay as written: the Treasurer's emails fill them.
@@ -207,7 +209,7 @@ def main() -> int:
         "template_name": "Blast Radius",
         # The server doesn't pick a default bridge the way Console's form does, so name it.
         "inputs": template_inputs(workspace, bridge, finance_lead, support_lead),
-    })
+    }, timeout=TEMPLATE_TIMEOUT)
     print(f"Created the support and fixer agents, #support and #finance-approvals on {bridge}, "
           f"with {finance_lead} as Finance lead and {support_lead} as Support lead. "
           "Support's kickoff is in #support.")

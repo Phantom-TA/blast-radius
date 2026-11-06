@@ -55,7 +55,7 @@ def gateway_session(server_url: str, interactive: bool = True, quiet: bool = Fal
         urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
     )
 
-    def gateway(method: str, path: str, body: dict | None = None) -> dict:
+    def gateway(method: str, path: str, body: dict | None = None, timeout: float = 30) -> dict:
         request = urllib.request.Request(
             f"{server_url}/gateway{path}",
             data=None if body is None else json.dumps(body).encode(),
@@ -63,7 +63,7 @@ def gateway_session(server_url: str, interactive: bool = True, quiet: bool = Fal
             method=method,
         )
         try:
-            with opener.open(request, timeout=30) as response:
+            with opener.open(request, timeout=timeout) as response:
                 raw = response.read()
         except urllib.error.HTTPError as error:
             raise SystemExit(f"{path} failed with {error.code}: {error.read().decode()[:300]}")

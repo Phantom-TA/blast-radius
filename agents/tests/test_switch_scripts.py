@@ -223,3 +223,9 @@ def test_archiving_keeps_the_room_and_deleting_retires_its_channel():
         ("POST", "/rooms/bulk-archive", {"room_ids": ["1"], "archived": True}),
         ("POST", "/rooms/bulk-delete", {"room_ids": ["1"], "retire_channel": True}),
     ]
+
+
+def test_template_import_waits_longer_than_a_normal_gateway_call():
+    # Creating the agents and rooms took about 80 seconds on a slow computer;
+    # a 30 second wait gave up while the server was still working.
+    assert import_template.TEMPLATE_TIMEOUT >= 300
