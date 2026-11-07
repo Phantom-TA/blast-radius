@@ -2,9 +2,9 @@
 
 **One customer complains about a double charge. AI agents in Switch find every other customer the same bug hit, fix the bug, refund everyone and apologize before they complain. People approve the code and the money.**
 
-[![Blast Radius demo: 4 AI agents and 2 people find, fix and refund](docs/demo-thumbnail.webp)](docs/blast-radius-demo.mp4?raw=true)
+https://github.com/user-attachments/assets/003debd2-df13-42c1-b0ea-38516020304a
 
-**[Watch the 2:51 demo video](docs/blast-radius-demo.mp4?raw=true)**: click the picture above. It shows the whole story running in a real Discord server with two people.
+**Press play above (2:51).** It shows the whole story running in a real Discord server with two people. If the player doesn't load, [download the video](docs/blast-radius-demo.mp4?raw=true).
 
 **Contents**
 
