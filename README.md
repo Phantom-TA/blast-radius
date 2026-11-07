@@ -4,7 +4,7 @@
 
 https://github.com/user-attachments/assets/003debd2-df13-42c1-b0ea-38516020304a
 
-**Press play above (2:51).** It shows the whole story running in a real Discord server with two people. If the player doesn't load, [download the video](docs/blast-radius-demo.mp4?raw=true).
+**Press play above (2:51).** It shows the whole story running in a real Discord server with two people.
 
 **Contents**
 
